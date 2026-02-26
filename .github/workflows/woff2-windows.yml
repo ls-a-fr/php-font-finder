@@ -19,9 +19,15 @@ jobs:
       changed: ${{ steps.check.outputs.changed }}
     steps:
       - uses: actions/checkout@v6
+      
+      # Pull woff2 repository into a "tmp" folder
+      - name: Pull woff2 repository
+        uses: actions/checkout@v6
         with:
+          repository: google/woff2
           submodules: true
           fetch-depth: 0
+          path: tmp
 
       - name: Check versions
         id: check
@@ -79,14 +85,6 @@ jobs:
     steps:
       # Checkouts this repository
       - uses: actions/checkout@v6
-
-      # Pull woff2 repository into a "tmp" folder
-      - name: Pull woff2 repository
-        uses: actions/checkout@v6
-        with:
-          repository: google/woff2
-          submodules: true
-          path: tmp
 
       # Configures brotli build with CMake, with msvc_arch defined by above matrix
       - name: Configures build for brotli
