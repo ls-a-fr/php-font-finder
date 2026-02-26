@@ -35,13 +35,13 @@ jobs:
           path: tmp
 
       - name: Configures build for brotli
-        working-directory: brotli
+        working-directory: tmp/brotli
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER
 
       - name: Build brotli
-        working-directory: brotli
+        working-directory: tmp/brotli
         run: cmake --build build-${{ matrix.arch }} --config $CONFIG
 
       - name: Configures build for woff2
