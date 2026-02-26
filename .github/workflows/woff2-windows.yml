@@ -1,4 +1,4 @@
-name: Build Woff2 (Windows)
+name: Build Woff2 Decompress utility
 on:
   workflow_dispatch:
 
@@ -70,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.arch }}
-          path: tmp/deps/woff_decompress-windows-${{ matrix.arch }}.exe
+          path: deps/woff_decompress-windows-${{ matrix.arch }}.exe
 
   collect-and-push:
     runs-on: ubuntu-latest
@@ -99,12 +99,16 @@ jobs:
           mv composer.json.tmp composer.json
           echo "Bumped version to $NEW_VERSION"
 
+          echo "bumped=true" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
       - name: Commit & push executables
+        if: steps.bump_version.outputs.bumped == 'true'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add composer.json deps/*
-          git commit -m "Bump version to $VERSION and add built executables" || echo "No changes"
-          git tag "v$VERSION" -a -m "Release v$VERSION"
+          git commit -m "Bump version to ${{ steps.bump_version.outputs.new_version }} and add built executables" || echo "No changes"
+          git tag "v${{ steps.bump_version.outputs.new_version }}" -a -m "Release v${{ steps.bump_version.outputs.new_version }}"
           git push
-          git push origin "v$VERSION"
+          git push origin "v${{ steps.bump_version.outputs.new_version }}"
