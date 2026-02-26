@@ -44,11 +44,14 @@ jobs:
           path: tmp
 
       # Configures brotli build with CMake, with msvc_arch defined by above matrix
+      # DCMAKE_EXE_LINKER_FLAGS allow to create reproductible builds. This is mandatory to
+      # detect changes in binaries later in this action.
       - name: Configures build for brotli
         working-directory: tmp/brotli
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
+            -DCMAKE_EXE_LINKER_FLAGS="/Brepro /DEBUG:NONE"
 
       # Builds brotli based on previous step, and CONFIG defined in environment section
       - name: Build brotli
