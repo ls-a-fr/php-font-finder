@@ -44,6 +44,7 @@ jobs:
         run: cmake --build build-${{ matrix.arch }} --config $CONFIG
 
       - name: Configures build for woff2
+        working-directory: tmp
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER \
@@ -55,6 +56,7 @@ jobs:
             -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/$CONFIG/brotlienc.lib"
 
       - name: Build woff2
+        working-directory: tmp
         run: cmake --build build-${{ matrix.arch }} --config $CONFIG
 
       - name: Copy built executable
