@@ -1,11 +1,6 @@
 # Temp
 on:
   workflow-dispatch:
-    inputs:
-      version:
-        description: 'Version to release'
-        required: true
-        default: '1.0.0'
 
 env:
   CMAKEVER: 3.15
@@ -95,9 +90,7 @@ jobs:
 
       - name: Bump version in composer.json
         run: |
-          git diff --quiet deps/
-          CHANGED=$?
-          if [ $CHANGED -eq 0 ]; then
+          if git diff --quiet deps/; then
             echo "No changes detected. Skipping version bump."
             exit 0
           fi

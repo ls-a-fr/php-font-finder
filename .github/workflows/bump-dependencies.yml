@@ -3,9 +3,7 @@ name: Update Composer Dependencies
 on:
   schedule:
     - cron: '0 0 * * 0' # This will run every Sunday at midnight
-  push:
-    branches:
-      - main
+  workflow-dispatch:
 
 jobs:
   bump-version:
@@ -28,9 +26,7 @@ jobs:
           composer update --with-dependencies
       - name: Bump minor version and update dependencies
         run: |
-          git diff --quiet composer.lock composer.json
-          CHANGED=$?
-          if [ $CHANGED -eq 0 ]; then
+          if git diff --quiet composer.json composer.lock; then
             echo "No changes detected. Skipping version bump."
             exit 0
           fi
