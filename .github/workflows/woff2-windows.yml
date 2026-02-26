@@ -13,9 +13,54 @@ env:
   CONFIG: Release
 
 jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Check versions
+        id: check
+        run: |
+          # Paths
+          VERSION_FILE="deps/VERSION"
+          mkdir -p deps
+
+          # Current commits
+          WOFF2_COMMIT=$(git rev-parse HEAD)
+          BROTLI_COMMIT=$(git -C tmp/brotli rev-parse HEAD || git -C tmp/brotli rev-parse HEAD)
+
+          # Read previous commits if file exists
+          PREV_WOFF2=""
+          PREV_BROTLI=""
+          if [ -f "$VERSION_FILE" ]; then
+            PREV_WOFF2=$(grep '^woff2:' "$VERSION_FILE" | cut -d' ' -f2)
+            PREV_BROTLI=$(grep '^brotli:' "$VERSION_FILE" | cut -d' ' -f2)
+          fi
+
+          echo "Current WOFF2 commit: $WOFF2_COMMIT"
+          echo "Current BROTLI commit: $BROTLI_COMMIT"
+          echo "Previous WOFF2 commit: $PREV_WOFF2"
+          echo "Previous BROTLI commit: $PREV_BROTLI"
+
+          # Compare
+          if [ "$WOFF2_COMMIT" = "$PREV_WOFF2" ] && [ "$BROTLI_COMMIT" = "$PREV_BROTLI" ]; then
+            echo "No source changes detected. Skipping builds."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Sources changed. Build required."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+  
   # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
   build-windows:
     runs-on: windows-latest
+    needs: check-versions
+    if: needs.check-versions.outputs.changed == 'true'
 
     strategy:
       matrix:
@@ -44,14 +89,11 @@ jobs:
           path: tmp
 
       # Configures brotli build with CMake, with msvc_arch defined by above matrix
-      # DCMAKE_EXE_LINKER_FLAGS allow to create reproductible builds. This is mandatory to
-      # detect changes in binaries later in this action.
       - name: Configures build for brotli
         working-directory: tmp/brotli
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-            -DCMAKE_EXE_LINKER_FLAGS="/Brepro /DEBUG:NONE"
 
       # Builds brotli based on previous step, and CONFIG defined in environment section
       - name: Build brotli
@@ -60,8 +102,6 @@ jobs:
 
       # Configures woff2 build with CMake, with msvc_arch defined by above matrix
       # This configuration needs some flags: include brotli, define Windows runtime
-      # DCMAKE_EXE_LINKER_FLAGS allow to create reproductible builds. This is mandatory to
-      # detect changes in binaries later in this action.
       - name: Configures build for woff2
         working-directory: tmp
         run: |
@@ -73,7 +113,6 @@ jobs:
             -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlidec.lib" \
             -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
             -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlienc.lib" \
-            -DCMAKE_EXE_LINKER_FLAGS="/Brepro /DEBUG:NONE"
 
       # Builds woff2 based on previous step, and CONFIG defined in environment section
       - name: Build woff2
@@ -91,8 +130,10 @@ jobs:
   # of this library.
   collect-and-push:
     runs-on: ubuntu-latest
+    if: needs.check-versions.outputs.changed == 'true'
     needs:
       - build-windows
+
     steps:
       - uses: actions/checkout@v6
 
@@ -100,41 +141,11 @@ jobs:
       - name: Download artifacts in a temporary folder
         uses: actions/download-artifact@v7
         with:
-          path: deps_new
+          path: deps
 
       - name: Bump version in composer.json
         id: bump_version
         run: |
-          # Ensure files exist before glob
-          shopt -s globstar nullglob
-
-          CHANGED=false
-
-          # Iterates through artifacts
-          for exe in deps_new/**/*.exe; do
-            # Removes "deps_new" from current file, and concats with "deps" folder
-            target="deps/${exe#deps_new/}"
-
-            # Creates folder to prevent cmp silent fail
-            mkdir -p "$(dirname "$target")"
-            if [ ! -f "$target" ] || ! cmp -s "$exe" "$target"; then
-              # Binary changed, copy this artifact into deps
-              CHANGED=true
-              
-              cp "$exe" "$target"
-            fi
-          done
-
-          # Set shopt back
-          shopt -u globstar nullglob
-
-          # If any change occured
-          if [ "$CHANGED" = false ]; then
-            echo "No changes in executables."
-            echo "bumped=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
           # String manipulation to bump version in composer.json file
           CURRENT=$(jq -r '.version' composer.json)
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
@@ -145,13 +156,11 @@ jobs:
           echo "Bumped version to $NEW_VERSION"
 
           # GitHub variables, used in next step
-          echo "bumped=true" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       # Commit and push only if necessary. "if" directive ensures this step only triggers
       # when at least one binary actually changed
       - name: Commit & push executables
-        if: steps.bump_version.outputs.bumped == 'true'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
