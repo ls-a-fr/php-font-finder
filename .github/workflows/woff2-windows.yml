@@ -72,9 +72,7 @@ jobs:
   collect-and-push:
     runs-on: ubuntu-latest
     needs:
-      - build-windows
-      - build-linux
-      # ajouter build-darwin, build-solaris, etc.
+      - build-woff2-decompress
     steps:
       - uses: actions/checkout@v6
 
