@@ -62,10 +62,9 @@ jobs:
 
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
-        working-directory: tmp
         with:
           name: windows-${{ matrix.arch }}
-          path: build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe
+          path: tmp/build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe
 
   collect-and-push:
     runs-on: ubuntu-latest
