@@ -38,7 +38,7 @@ jobs:
         working-directory: tmp/brotli
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER
+            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
 
       - name: Build brotli
         working-directory: tmp/brotli
@@ -61,6 +61,7 @@ jobs:
         run: cmake --build build-${{ matrix.arch }} --config $CONFIG
 
       - name: Copy built executable
+        working-directory: tmp
         run: |
           mkdir -p deps
           cp build-${{ matrix.arch }}/$CONFIG/woff2_decompress.exe ../deps/woff_decompress-windows-${{ matrix.arch }}.exe
