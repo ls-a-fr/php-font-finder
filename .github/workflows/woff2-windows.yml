@@ -81,8 +81,10 @@ jobs:
       - name: Bump version in composer.json
         id: bump_version
         run: |
+          shopt -s globstar nullglob
+
           CHANGED=false
-          for exe in deps_new/*.exe; do
+          for exe in deps_new/**/*.exe; do
             target="deps/${exe#deps_new/}"
             if [ ! -f "$target" ] || ! cmp -s "$exe" "$target"; then
               CHANGED=true
