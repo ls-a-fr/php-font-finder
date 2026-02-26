@@ -60,17 +60,12 @@ jobs:
         working-directory: tmp
         run: cmake --build build-${{ matrix.arch }} --config ${{ env.CONFIG }}
 
-      - name: Copy built executable
-        working-directory: tmp
-        run: |
-          mkdir -p deps
-          cp build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe ../deps/woff_decompress-windows-${{ matrix.arch }}.exe
-      
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
+        working-directory: tmp
         with:
           name: windows-${{ matrix.arch }}
-          path: deps/woff_decompress-windows-${{ matrix.arch }}.exe
+          path: build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe
 
   collect-and-push:
     runs-on: ubuntu-latest
@@ -79,16 +74,25 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Download artifacts
+      - name: Download artifacts in a temporary folder
         uses: actions/download-artifact@v7
         with:
-          path: deps
+          path: deps_new
 
       - name: Bump version in composer.json
         id: bump_version
         run: |
-          if [ -z "$(find deps -type f ! -name '.*')" ]; then
-            echo "No executables downloaded. Skipping version bump."
+          CHANGED=false
+          for exe in deps_new/*.exe; do
+            target="deps/${exe#deps_new/}"
+            if [ ! -f "$target" ] || ! cmp -s "$exe" "$target"; then
+              CHANGED=true
+              cp "$exe" "$target"
+            fi
+          done
+
+          if [ "$CHANGED" = false ]; then
+            echo "No changes in executables."
             echo "bumped=false" >> $GITHUB_OUTPUT
             exit 0
           fi
