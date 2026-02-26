@@ -13,13 +13,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - arch: i386
-            msvc_arch: Win32
-            devcmd_arch: x86
-
           - arch: amd64
             msvc_arch: x64
             devcmd_arch: x64
+
+          - arch: i386
+            msvc_arch: Win32
+            devcmd_arch: x86
 
     defaults:
       run:
@@ -86,8 +86,9 @@ jobs:
 
       - name: Bump version in composer.json
         run: |
-          if git diff --quiet deps/; then
-            echo "No changes detected. Skipping version bump."
+          if [ -z "$(find deps -type f ! -name '.*')" ]; then
+            echo "No executables downloaded. Skipping version bump."
+            echo "bumped=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
