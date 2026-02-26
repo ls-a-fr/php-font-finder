@@ -1,0 +1,121 @@
+# Temp
+on:
+  workflow-dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+        default: '1.0.0'
+
+env:
+  CMAKEVER: 3.15
+  CONFIG: Release
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+
+  build-woff2-decompress:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        include:
+          - arch: i386
+            msvc_arch: Win32
+            devcmd_arch: x86
+
+          - arch: amd64
+            msvc_arch: x64
+            devcmd_arch: x64
+
+    defaults:
+      run:
+        working-directory: tmp
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Pull woff2 repository
+        uses: actions/checkout@v6
+        with:
+          repository: google/woff2
+          path: tmp
+
+      - name: Configures build for brotli
+        working-directory: brotli
+        run: |
+          cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER
+
+      - name: Build brotli
+        working-directory: brotli
+        run: cmake --build build-${{ matrix.arch }} --config $CONFIG
+
+      - name: Configures build for woff2
+        run: |
+          cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER \
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE \
+            -DBUILD_SHARED_LIBS=FALSE \
+            -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
+            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/$CONFIG/brotlidec.lib" \
+            -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/$CONFIG/brotlienc.lib"
+
+      - name: Build woff2
+        run: cmake --build build-${{ matrix.arch }} --config $CONFIG
+
+      - name: Copy built executable
+        run: |
+          mkdir -p deps
+          cp build-${{ matrix.arch }}/$CONFIG/woff2_decompress.exe ../deps/woff_decompress-windows-${{ matrix.arch }}.exe
+      
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}
+          path: deps/windows-${{ matrix.arch }}.exe
+
+  collect-and-push:
+    runs-on: ubuntu-latest
+    needs:
+      - build-windows
+      - build-linux
+      # ajouter build-darwin, build-solaris, etc.
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: deps
+
+      - name: Bump version in composer.json
+        run: |
+          git diff --quiet deps/
+          CHANGED=$?
+          if [ $CHANGED -eq 0 ]; then
+            echo "No changes detected. Skipping version bump."
+            exit 0
+          fi
+
+          CURRENT=$(jq -r '.version' composer.json)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          NEW_MINOR=$((MINOR+1))
+          NEW_VERSION="$MAJOR.$NEW_MINOR.0"
+          jq --arg ver "$NEW_VERSION" '.version=$ver' composer.json > composer.json.tmp
+          mv composer.json.tmp composer.json
+          echo "Bumped version to $NEW_VERSION"
+
+      - name: Commit & push executables
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add composer.json deps/*
+          git commit -m "Bump version to $VERSION and add built executables" || echo "No changes"
+          git tag "v$VERSION" -a -m "Release v$VERSION"
+          git push
+          git push origin "v$VERSION"

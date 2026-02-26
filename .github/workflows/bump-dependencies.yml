@@ -1,0 +1,52 @@
+name: Update Composer Dependencies
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # This will run every Sunday at midnight
+  push:
+    branches:
+      - main
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer
+        run: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+      - name: Update dependencies
+        run: |
+          composer update --with-dependencies
+      - name: Bump minor version and update dependencies
+        run: |
+          git diff --quiet composer.lock composer.json
+          CHANGED=$?
+          if [ $CHANGED -eq 0 ]; then
+            echo "No changes detected. Skipping version bump."
+            exit 0
+          fi
+
+          CURRENT=$(jq -r '.version' composer.json)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          NEW_MINOR=$((MINOR+1))
+          NEW_VERSION="$MAJOR.$NEW_MINOR.0"
+          jq --arg ver "$NEW_VERSION" '.version=$ver' composer.json > composer.json.tmp
+          mv composer.json.tmp composer.json
+          echo "Bumped version to $NEW_VERSION"
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add composer.json composer.lock
+          git commit -m "Update Composer dependencies" || echo "No changes"
+          git push
+          git push origin "v$VERSION"
