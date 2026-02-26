@@ -1,55 +1,55 @@
 {
-    "name": "ls-a/font-finder",
-    "version": "0.0.1",
-    "description": "Find all fonts registered on server Operating System. Inspiration found in Apache FOP FontFileFinder",
-    "keywords": [
-        "font",
-        "finder",
-        "operating-system",
-        "os",
-        "windows",
-        "mac",
-        "linux",
-        "unix"
-    ],
-    "license": "GPL-3.0-or-later",
-    "authors": [
-        {
-            "name": "ls-a",
-            "email": "contact@ls-a.fr"
-        }
-    ],
-    "require": {
-        "php": "^8.0.0",
-        "psr/log": "^3.0",
-        "symfony/process": "^7.4"
-    },
-    "scripts": {
-        "beautify": "./vendor/bin/pint",
-        "phpstan": "./vendor/bin/phpstan analyse --memory-limit 4096M",
-        "phpcs": "./vendor/bin/phpcs -p -s -d memory_limit=512M src",
-        "analyse": [
-            "@beautify",
-            "@phpstan",
-            "@phpcs"
-        ],
-        "test": "./vendor/bin/phpunit --bootstrap tests/bootstrap.php tests --display-warnings --display-notices"
-    },
-    "require-dev": {
-        "laravel/pint": "^1.22",
-        "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^12.1",
-        "squizlabs/php_codesniffer": "^4.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "Lsa\\Font\\Finder\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Lsa\\Font\\Finder\\Tests\\": "tests/",
-            "LsaStandard\\": "phpcs/LsaStandard/"
-        }
+  "name": "ls-a/font-finder",
+  "version": "0.1.0",
+  "description": "Find all fonts registered on server Operating System. Inspiration found in Apache FOP FontFileFinder",
+  "keywords": [
+    "font",
+    "finder",
+    "operating-system",
+    "os",
+    "windows",
+    "mac",
+    "linux",
+    "unix"
+  ],
+  "license": "GPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "ls-a",
+      "email": "contact@ls-a.fr"
     }
+  ],
+  "require": {
+    "php": "^8.0.0",
+    "psr/log": "^3.0",
+    "symfony/process": "^7.4"
+  },
+  "scripts": {
+    "beautify": "./vendor/bin/pint",
+    "phpstan": "./vendor/bin/phpstan analyse --memory-limit 4096M",
+    "phpcs": "./vendor/bin/phpcs -p -s -d memory_limit=512M src",
+    "analyse": [
+      "@beautify",
+      "@phpstan",
+      "@phpcs"
+    ],
+    "test": "./vendor/bin/phpunit --bootstrap tests/bootstrap.php tests --display-warnings --display-notices"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.22",
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^12.1",
+    "squizlabs/php_codesniffer": "^4.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Lsa\\Font\\Finder\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Lsa\\Font\\Finder\\Tests\\": "tests/",
+      "LsaStandard\\": "phpcs/LsaStandard/"
+    }
+  }
 }
