@@ -1,6 +1,6 @@
-# Temp
+name: Build Woff2 (Windows)
 on:
-  workflow-dispatch:
+  workflow_dispatch:
 
 env:
   CMAKEVER: 3.15

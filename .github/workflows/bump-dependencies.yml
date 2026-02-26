@@ -3,7 +3,7 @@ name: Update Composer Dependencies
 on:
   schedule:
     - cron: '0 0 * * 0' # This will run every Sunday at midnight
-  workflow-dispatch:
+  workflow_dispatch:
 
 jobs:
   bump-version:
