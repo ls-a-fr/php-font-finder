@@ -70,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.arch }}
-          path: deps/windows-${{ matrix.arch }}.exe
+          path: tmp/deps/woff_decompress-windows-${{ matrix.arch }}.exe
 
   collect-and-push:
     runs-on: ubuntu-latest
