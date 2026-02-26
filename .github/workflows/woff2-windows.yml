@@ -7,7 +7,7 @@ env:
   CONFIG: Release
 
 jobs:
-  build-woff2-decompress:
+  build-windows:
     runs-on: windows-latest
 
     strategy:
@@ -75,7 +75,7 @@ jobs:
   collect-and-push:
     runs-on: ubuntu-latest
     needs:
-      - build-woff2-decompress
+      - build-windows
     steps:
       - uses: actions/checkout@v6
 
