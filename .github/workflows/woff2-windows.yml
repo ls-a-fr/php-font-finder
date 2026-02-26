@@ -7,11 +7,6 @@ env:
   CONFIG: Release
 
 jobs:
-  bump-version:
-    runs-on: ubuntu-latest
-
-    steps:
-
   build-woff2-decompress:
     runs-on: windows-latest
 
