@@ -42,7 +42,7 @@ jobs:
 
       - name: Build brotli
         working-directory: tmp/brotli
-        run: cmake --build build-${{ matrix.arch }} --config $CONFIG
+        run: cmake --build build-${{ matrix.arch }} --config ${{ env.CONFIG }}
 
       - name: Configures build for woff2
         working-directory: tmp
@@ -52,19 +52,19 @@ jobs:
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE \
             -DBUILD_SHARED_LIBS=FALSE \
             -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
-            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/$CONFIG/brotlidec.lib" \
+            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlidec.lib" \
             -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
-            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/$CONFIG/brotlienc.lib"
+            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlienc.lib"
 
       - name: Build woff2
         working-directory: tmp
-        run: cmake --build build-${{ matrix.arch }} --config $CONFIG
+        run: cmake --build build-${{ matrix.arch }} --config ${{ env.CONFIG }}
 
       - name: Copy built executable
         working-directory: tmp
         run: |
           mkdir -p deps
-          cp build-${{ matrix.arch }}/$CONFIG/woff2_decompress.exe ../deps/woff_decompress-windows-${{ matrix.arch }}.exe
+          cp build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe ../deps/woff_decompress-windows-${{ matrix.arch }}.exe
       
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
@@ -85,6 +85,7 @@ jobs:
           path: deps
 
       - name: Bump version in composer.json
+        id: bump_version
         run: |
           if [ -z "$(find deps -type f ! -name '.*')" ]; then
             echo "No executables downloaded. Skipping version bump."
