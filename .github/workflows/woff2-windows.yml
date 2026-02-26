@@ -1,4 +1,10 @@
 name: Build Woff2 Decompress utility
+# This workflow allows to build woff2_decompress and embed it in source code.
+# Doing so ensures this library is easy to use for production, but also to contribute on.
+# 
+# This workflow checks for any change in woff2_decompress binaries to prevent push of same binaries
+# over and over. When a new version of woff2 is released, you mean to manually launch this action.
+# This behavior is intended, to prevent security risks such as supply chain attack on woff2 repository.
 on:
   workflow_dispatch:
 
@@ -7,6 +13,7 @@ env:
   CONFIG: Release
 
 jobs:
+  # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
   build-windows:
     runs-on: windows-latest
 
@@ -25,8 +32,10 @@ jobs:
       run:
         shell: bash
     steps:
+      # Checkouts this repository
       - uses: actions/checkout@v6
 
+      # Pull woff2 repository into a "tmp" folder
       - name: Pull woff2 repository
         uses: actions/checkout@v6
         with:
@@ -34,16 +43,20 @@ jobs:
           submodules: true
           path: tmp
 
+      # Configures brotli build with CMake, with msvc_arch defined by above matrix
       - name: Configures build for brotli
         working-directory: tmp/brotli
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
 
+      # Builds brotli based on previous step, and CONFIG defined in environment section
       - name: Build brotli
         working-directory: tmp/brotli
         run: cmake --build build-${{ matrix.arch }} --config ${{ env.CONFIG }}
 
+      # Configures woff2 build with CMake, with msvc_arch defined by above matrix
+      # This configuration needs some flags: include brotli, define Windows runtime
       - name: Configures build for woff2
         working-directory: tmp
         run: |
@@ -56,16 +69,20 @@ jobs:
             -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
             -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlienc.lib"
 
+      # Builds woff2 based on previous step, and CONFIG defined in environment section
       - name: Build woff2
         working-directory: tmp
         run: cmake --build build-${{ matrix.arch }} --config ${{ env.CONFIG }}
 
+      # Upload artifacts. These artifacts will be used later, in collect-and-push action.
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.arch }}
           path: tmp/build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe
 
+  # Gather artifacts, compare them to current version. If any change is detected, creates a new version
+  # of this library.
   collect-and-push:
     runs-on: ubuntu-latest
     needs:
@@ -73,6 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Artifacts are stored in a "deps_new" folder to compare current deps with
       - name: Download artifacts in a temporary folder
         uses: actions/download-artifact@v7
         with:
@@ -81,23 +99,37 @@ jobs:
       - name: Bump version in composer.json
         id: bump_version
         run: |
+          # Ensure files exist before glob
           shopt -s globstar nullglob
 
           CHANGED=false
+
+          # Iterates through artifacts
           for exe in deps_new/**/*.exe; do
+            # Removes "deps_new" from current file, and concats with "deps" folder
             target="deps/${exe#deps_new/}"
+
+            # Creates folder to prevent cmp silent fail
+            mkdir -p "$(dirname "$target")"
             if [ ! -f "$target" ] || ! cmp -s "$exe" "$target"; then
+              # Binary changed, copy this artifact into deps
               CHANGED=true
+              
               cp "$exe" "$target"
             fi
           done
 
+          # Set shopt back
+          shopt -u globstar nullglob
+
+          # If any change occured
           if [ "$CHANGED" = false ]; then
             echo "No changes in executables."
             echo "bumped=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
+          # String manipulation to bump version in composer.json file
           CURRENT=$(jq -r '.version' composer.json)
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
           NEW_MINOR=$((MINOR+1))
@@ -106,9 +138,12 @@ jobs:
           mv composer.json.tmp composer.json
           echo "Bumped version to $NEW_VERSION"
 
+          # GitHub variables, used in next step
           echo "bumped=true" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
+      # Commit and push only if necessary. "if" directive ensures this step only triggers
+      # when at least one binary actually changed
       - name: Commit & push executables
         if: steps.bump_version.outputs.bumped == 'true'
         run: |
