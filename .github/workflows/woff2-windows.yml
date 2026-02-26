@@ -60,6 +60,8 @@ jobs:
 
       # Configures woff2 build with CMake, with msvc_arch defined by above matrix
       # This configuration needs some flags: include brotli, define Windows runtime
+      # DCMAKE_EXE_LINKER_FLAGS allow to create reproductible builds. This is mandatory to
+      # detect changes in binaries later in this action.
       - name: Configures build for woff2
         working-directory: tmp
         run: |
@@ -70,7 +72,8 @@ jobs:
             -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
             -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlidec.lib" \
             -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
-            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlienc.lib"
+            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlienc.lib" \
+            -DCMAKE_EXE_LINKER_FLAGS="/Brepro /DEBUG:NONE"
 
       # Builds woff2 based on previous step, and CONFIG defined in environment section
       - name: Build woff2
