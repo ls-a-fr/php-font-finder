@@ -1,6 +1,6 @@
 {
   "name": "ls-a/font-finder",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Find all fonts registered on server Operating System. Inspiration found in Apache FOP FontFileFinder",
   "keywords": [
     "font",
