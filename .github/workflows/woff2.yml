@@ -295,10 +295,11 @@ jobs:
         working-directory: tmp/brotli
         run: |
           if [ "${{ matrix.arch }}" = "armv7" ]; then
-            cmake -S . -B build-armv7 \
-            -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
-            -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ \
-            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }}
+            cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
+              -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
           else
             cmake -S . -B build-${{ matrix.arch }} \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
