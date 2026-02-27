@@ -70,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: steps.check.outputs.changed == 'true'
         with:
-          name: VERSIONFILE
+          name: VERSION
           path: ${{ env.VERSIONFILE }}
   
   # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
