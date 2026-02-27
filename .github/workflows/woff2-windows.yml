@@ -68,7 +68,7 @@ jobs:
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
       - name: Upload VERSIONFILE artifact
         uses: actions/upload-artifact@v4
-        if: needs.check-versions.outputs.changed == 'true'
+        if: steps.check-versions.outputs.changed == 'true'
         with:
           name: VERSIONFILE
           path: ${{ env.VERSIONFILE }}
