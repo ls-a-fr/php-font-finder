@@ -300,7 +300,14 @@ jobs:
         if: matrix.arch == 'armv7'
         run: sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
       
+      # ARM64 needs specific gcc compiler tools
+      - name: Install ARM64 toolchain
+        if: matrix.arch == 'arm64'
+        run: sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
       # Configures brotli build with CMake
+      # With ARMv7 and ARM64, you need to specify flags for CMAKE_C_COMPILER and 
+      # CMAKE_CXX_COMPILER. Be careful, these flags are different.
       - name: Configures build for brotli
         working-directory: tmp/brotli
         run: |
@@ -309,6 +316,12 @@ jobs:
             cmake -S . -B build-${{ matrix.arch }} \
               -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
               -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+          elif [ "${{ matrix.arch }}" = "arm64" ]; then
+            cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+              -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
           else
@@ -324,6 +337,8 @@ jobs:
 
       # Configures woff2 build with CMake
       # This configuration needs some flags: include brotli, disable shared libs
+      # With ARMv7 and ARM64, you need to include *-static.a libraries, and specify flags for
+      # CMAKE_C_COMPILER and CMAKE_CXX_COMPILER. Be careful, these flags are different.
       - name: Configures build for woff2
         working-directory: tmp
         run: |
@@ -338,17 +353,27 @@ jobs:
               -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
               -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
               -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
+          elif [ "${{ matrix.arch }}" = "arm64" ]; then
+            cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
+              -DBUILD_SHARED_LIBS=FALSE \
+              -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
+              -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
+              -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+              -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
           else
             cmake -S . -B build-${{ matrix.arch }} \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
               -DBUILD_SHARED_LIBS=FALSE \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
-              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec.a" \
               -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec.a" \
               -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc.a"
           fi
-
 
       # Builds woff2 based on previous step
       - name: Build woff2
