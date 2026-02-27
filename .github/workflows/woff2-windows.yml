@@ -140,12 +140,20 @@ jobs:
         working-directory: tmp
         run: cmake --build build-${{ matrix.arch }} --config ${{ env.CONFIG }}
 
+      # Artifacts are stored as windows-${{ matrix.arch }}/woff2_decompress.exe
+      # We need to create a folder, and then push this folder as an artifact
+      - name: Prepare artifact structure
+        run: |
+          mkdir -p artifact/windows-${{ matrix.arch }}
+          cp tmp/build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe \
+            artifact/windows-${{ matrix.arch }}/
+
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-${{ matrix.arch }}/woff2_decompress.exe
-          path: tmp/build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe
+          name: windows-${{ matrix.arch }}
+          path: artifact/windows-${{ matrix.arch }}
 
   # Gather artifacts, compare them to current version. If any change is detected, creates a new version
   # of this library.
