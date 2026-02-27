@@ -11,6 +11,7 @@ on:
 env:
   CMAKEVER: 3.15
   CONFIG: Release
+  VERSIONFILE: deps/VERSION
 
 jobs:
   check-versions:
@@ -33,7 +34,6 @@ jobs:
         id: check
         run: |
           # Paths
-          VERSION_FILE="deps/VERSION"
           mkdir -p deps
 
           # Current commits
@@ -43,9 +43,9 @@ jobs:
           # Read previous commits if file exists
           PREV_WOFF2=""
           PREV_BROTLI=""
-          if [ -f "$VERSION_FILE" ]; then
-            PREV_WOFF2=$(grep '^woff2:' "$VERSION_FILE" | cut -d' ' -f2)
-            PREV_BROTLI=$(grep '^brotli:' "$VERSION_FILE" | cut -d' ' -f2)
+          if [ -f "${{ env.VERSION_FILE }}" ]; then
+            PREV_WOFF2=$(grep '^woff2:' "${{ env.VERSION_FILE }}" | cut -d' ' -f2)
+            PREV_BROTLI=$(grep '^brotli:' "${{ env.VERSION_FILE }}" | cut -d' ' -f2)
           fi
 
           echo "Current WOFF2 commit: $WOFF2_COMMIT"
@@ -60,6 +60,10 @@ jobs:
           else
             echo "Sources changed. Build required."
             echo "changed=true" >> $GITHUB_OUTPUT
+
+            # Update VERSIONFILE for next runs
+            echo "woff2: $WOFF2_COMMIT" > "${{ env.VERSION_FILE }}"
+            echo "brotli: $BROTLI_COMMIT" >> "${{ env.VERSION_FILE }}"
           fi
   
   # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
@@ -170,7 +174,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add composer.json deps/*
+          git add composer.json deps/* ${{ env.VERSIONFILE }}
           git commit -m "Bump version to ${{ steps.bump_version.outputs.new_version }} and add built executables" || echo "No changes"
           git tag "v${{ steps.bump_version.outputs.new_version }}" -a -m "Release v${{ steps.bump_version.outputs.new_version }}"
           git push
