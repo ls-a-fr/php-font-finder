@@ -65,6 +65,13 @@ jobs:
             echo "woff2: $WOFF2_COMMIT" > "${{ env.VERSIONFILE }}"
             echo "brotli: $BROTLI_COMMIT" >> "${{ env.VERSIONFILE }}"
           fi
+      # Upload artifacts. These artifacts will be used later, in collect-and-push action.
+      - name: Upload VERSIONFILE artifact
+        uses: actions/upload-artifact@v4
+        if: needs.check-versions.outputs.changed == 'true'
+        with:
+          name: VERSIONFILE
+          path: ${{ env.VERSIONFILE }}
   
   # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
   build-windows:
@@ -147,8 +154,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # Artifacts are stored in a "deps_new" folder to compare current deps with
-      - name: Download artifacts in a temporary folder
+      # Artifacts are stored in "deps" folder
+      - name: Download artifacts in deps folder
         uses: actions/download-artifact@v7
         with:
           path: deps
