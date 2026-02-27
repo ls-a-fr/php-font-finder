@@ -5,6 +5,10 @@ name: Build Woff2 Decompress utility
 # This workflow checks for any change in woff2_decompress binaries to prevent push of same binaries
 # over and over. When a new version of woff2 is released, you mean to manually launch this action.
 # This behavior is intended, to prevent security risks such as supply chain attack on woff2 repository.
+#
+# Currently, this file is all there is to include in deps folder, so it's designed as a straightforward
+# script. If other binaries are needed in this library, a more composable approach will be used, using
+# actions next to this workflow.
 on:
   workflow_dispatch:
 
@@ -140,7 +144,7 @@ jobs:
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-${{ matrix.arch }}
+          name: windows-${{ matrix.arch }}/woff2_decompress.exe
           path: tmp/build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe
 
   # Gather artifacts, compare them to current version. If any change is detected, creates a new version
@@ -159,6 +163,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: deps
+          merge-multiple: true
 
       - name: Bump version in composer.json
         id: bump_version
