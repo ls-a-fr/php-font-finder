@@ -328,22 +328,27 @@ jobs:
         working-directory: tmp
         run: |
           if [ "${{ matrix.arch }}" = "armv7" ]; then
-            export CC=arm-linux-gnueabihf-gcc
-            export CXX=arm-linux-gnueabihf-g++
-            BROTLIDEC_LIB="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a"
-            BROTLIENC_LIB="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a"
+            cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
+              -DBUILD_SHARED_LIBS=FALSE \
+              -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a" \
+              -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a" \
+              -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
+              -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
           else
-            BROTLIDEC_LIB="brotli/build-${{ matrix.arch }}/libbrotlidec.a"
-            BROTLIENC_LIB="brotli/build-${{ matrix.arch }}/libbrotlienc.a"
+            cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
+              -DBUILD_SHARED_LIBS=FALSE \
+              -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec.a" \
+              -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc.a"
           fi
-          cmake -S . -B build-${{ matrix.arch }} \
-            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-            -DBUILD_SHARED_LIBS=FALSE \
-            -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
-            -DBROTLIDEC_LIBRARIES="$BROTLIDEC_LIB" \
-            -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
-            -DBROTLIENC_LIBRARIES="$BROTLIENC_LIB"
+
 
       # Builds woff2 based on previous step
       - name: Build woff2
