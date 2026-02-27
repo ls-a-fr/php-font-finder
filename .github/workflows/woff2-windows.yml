@@ -43,7 +43,7 @@ jobs:
           # Read previous commits if file exists
           PREV_WOFF2=""
           PREV_BROTLI=""
-          if [ -f "${{ env.VERSION_FILE }}" ]; then
+          if [ -f "${{ env.VERSIONFILE }}" ]; then
             PREV_WOFF2=$(grep '^woff2:' "${{ env.VERSIONFILE }}" | cut -d' ' -f2)
             PREV_BROTLI=$(grep '^brotli:' "${{ env.VERSIONFILE }}" | cut -d' ' -f2)
           fi
@@ -62,8 +62,8 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
 
             # Update VERSIONFILE for next runs
-            echo "woff2: $WOFF2_COMMIT" > "${{ env.VERSION_FILE }}"
-            echo "brotli: $BROTLI_COMMIT" >> "${{ env.VERSION_FILE }}"
+            echo "woff2: $WOFF2_COMMIT" > "${{ env.VERSIONFILE }}"
+            echo "brotli: $BROTLI_COMMIT" >> "${{ env.VERSIONFILE }}"
           fi
   
   # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
