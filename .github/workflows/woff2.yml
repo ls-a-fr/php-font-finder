@@ -328,8 +328,10 @@ jobs:
         working-directory: tmp
         run: |
           if [ "${{ matrix.arch }}" = "armv7" ]; then
-            BROTLIDEC_LIB="brotli/build-armv7/libbrotlidec-static.a"
-            BROTLIENC_LIB="brotli/build-armv7/libbrotlienc-static.a"
+            export CC=arm-linux-gnueabihf-gcc
+            export CXX=arm-linux-gnueabihf-g++
+            BROTLIDEC_LIB="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a"
+            BROTLIENC_LIB="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a"
           else
             BROTLIDEC_LIB="brotli/build-${{ matrix.arch }}/libbrotlidec.a"
             BROTLIENC_LIB="brotli/build-${{ matrix.arch }}/libbrotlienc.a"
