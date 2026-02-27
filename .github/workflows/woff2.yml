@@ -28,6 +28,15 @@ env:
   VERSIONFILE: deps/VERSION
 
 jobs:
+  # check-versions:
+  # - pull woff2 repository
+  # - checks last commit for woff2 and brotli
+  # - compares them to deps/VERSION contents in this project
+  # - if same:
+  #   - stops there.
+  # - if different:
+  #   - changes happened, needs to rebuild
+  #   - modifies deps/VERSION for future workflow usage
   check-versions:
     runs-on: ubuntu-latest
     outputs:
@@ -311,9 +320,7 @@ jobs:
       # Builds brotli based on previous step
       - name: Build brotli
         working-directory: tmp/brotli
-        run: |
-          cmake --build build-${{ matrix.arch }} --target brotlidec
-          cmake --build build-${{ matrix.arch }} --target brotlienc
+        run: cmake --build build-${{ matrix.arch }}
 
       # Configures woff2 build with CMake
       # This configuration needs some flags: include brotli, disable shared libs
