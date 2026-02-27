@@ -261,8 +261,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - arch: amd64
-          - arch: arm64
+          # - arch: amd64
+          # - arch: arm64
           - arch: armv7
 
     defaults:
@@ -354,6 +354,7 @@ jobs:
     needs:
       - build-windows
       - build-darwin
+      - build-linux
 
     steps:
       - uses: actions/checkout@v6
