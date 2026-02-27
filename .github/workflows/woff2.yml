@@ -192,8 +192,8 @@ jobs:
           - arch: amd64
             osx_arch: x86_64
 
-          - arch: arm64
-            osx_arch: arm64
+          # - arch: arm64
+          #   osx_arch: arm64
 
     defaults:
       run:
@@ -238,8 +238,8 @@ jobs:
             -DBUILD_SHARED_LIBS=FALSE \
             -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
             -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
-            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec.a;brotli/build-${{ matrix.arch }}/libbrotlicommon.a" \
-            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc.a;brotli/build-${{ matrix.arch }}/libbrotlicommon.a"
+            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
+            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a"
 
       # Builds woff2 based on previous step
       - name: Build woff2
