@@ -335,7 +335,7 @@ jobs:
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
-              -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a"
+              -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
               -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
               -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
           else
