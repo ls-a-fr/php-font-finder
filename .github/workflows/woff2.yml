@@ -262,6 +262,9 @@ jobs:
           path: artifact/darwin-${{ matrix.arch }}
 
   # Build woff2_decompress on Linux (amd64, arm64 and armv7) and push them as artifacts
+  # It's nice to see in the workflow diagram a "build-linux" single card, but let's be honest,
+  # a lot of steps are if/elif/else between amd64, arm64 and armv7. You may find it easier to
+  # divide this job in three.
   build-linux:
     runs-on: ubuntu-latest
     needs: check-versions
@@ -270,9 +273,9 @@ jobs:
     strategy:
       matrix:
         include:
-          # - arch: amd64
-          - arch: arm64
-          - arch: armv7
+          - arch: amd64
+          # - arch: arm64
+          # - arch: armv7
 
     defaults:
       run:
