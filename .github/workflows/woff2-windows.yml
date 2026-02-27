@@ -62,8 +62,8 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
 
             # Update VERSIONFILE for next runs
-            echo "woff2: $WOFF2_COMMIT" > "${{ env.VERSION_FILE }}"
-            echo "brotli: $BROTLI_COMMIT" >> "${{ env.VERSION_FILE }}"
+            echo "woff2: $WOFF2_COMMIT" > ${{ env.VERSION_FILE }}
+            echo "brotli: $BROTLI_COMMIT" >> ${{ env.VERSION_FILE }}
           fi
   
   # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
