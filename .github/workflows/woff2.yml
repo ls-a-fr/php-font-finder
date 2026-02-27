@@ -11,11 +11,14 @@ name: Build Woff2 Decompress utility
 # be used, using actions next to this workflow.
 #
 # Workflow process:
-#                         /-- [ build-windows ] --\
-#                        /---- [ build-unix ] -----\
-# [ check-versions ] -------- [ build-darwin ] --------- [ collect-and-push ]
-# -> May stop workflow   \--- [ build-solaris ] ---/     -> Push to deps directory
-#                         \---- [ build-bsd ] ----/
+#                       /-- [ build-windows ] --\
+#                      /---- [ build-unix ] -----\
+# [ check-versions ] ------ [ build-darwin ] ------- [ collect-and-push ]
+# -> May stop workflow \--- [ build-solaris ] ---/    -> Push to deps directory
+#                       \---- [ build-bsd ] ----/
+#
+# You may reuse and modify this workflow for your projects as you see fit. If this workflow helps you,
+# consider staring this project, it helps us moving forward!
 on:
   workflow_dispatch:
 
@@ -83,7 +86,14 @@ jobs:
         with:
           name: VERSION
           path: ${{ env.VERSIONFILE }}
-  
+      # Upload sources for all build jobs
+      - name: Upload woff2 sources
+        uses: actions/upload-artifact@v4
+        if: steps.check.outputs.changed == 'true'
+        with:
+          name: woff2-sources
+          path: tmp
+
   # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
   build-windows:
     runs-on: windows-latest
@@ -108,12 +118,11 @@ jobs:
       # Checkouts this repository
       - uses: actions/checkout@v6
 
-      # Pull woff2 repository into a "tmp" folder
-      - name: Pull woff2 repository
-        uses: actions/checkout@v6
+      # Download artifact created in prepare-sources
+      - name: Download woff2 sources
+        uses: actions/download-artifact@v7
         with:
-          repository: google/woff2
-          submodules: true
+          name: woff2-sources
           path: tmp
 
       # Configures brotli build with CMake, with msvc_arch defined by above matrix
@@ -162,6 +171,166 @@ jobs:
           name: windows-${{ matrix.arch }}
           path: artifact/windows-${{ matrix.arch }}
 
+  # Build woff2_decompress on macOS (Intel and Apple Silicon) and push them as artifacts
+  build-darwin:
+    runs-on: macos-latest
+    needs: check-versions
+    if: needs.check-versions.outputs.changed == 'true'
+
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            osx_arch: x86_64
+
+          - arch: arm64
+            osx_arch: arm64
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Download artifact created in check-versions
+      - name: Download woff2 sources
+        uses: actions/download-artifact@v7
+        with:
+          name: woff2-sources
+          path: tmp
+
+      # Configures brotli build with CMake, with osx_arch defined by above matrix
+      - name: Configures build for brotli
+        working-directory: tmp/brotli
+        run: |
+          cmake -S . -B build-${{ matrix.arch }} \
+            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+
+      # Builds brotli based on previous step, and CONFIG defined in environment section
+      - name: Build brotli
+        working-directory: tmp/brotli
+        run: cmake --build build-${{ matrix.arch }}
+
+      # Configures woff2 build with CMake, with osx_arch defined by above matrix
+      # This configuration needs some flags: include brotli, disable shared libs
+      - name: Configures build for woff2
+        working-directory: tmp
+        run: |
+          cmake -S . -B build-${{ matrix.arch }} \
+            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
+            -DBUILD_SHARED_LIBS=FALSE \
+            -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
+            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec.a" \
+            -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc.a"
+
+      # Builds woff2 based on previous step
+      - name: Build woff2
+        working-directory: tmp
+        run: cmake --build build-${{ matrix.arch }}
+
+      # Artifacts are stored as darwin-${{ matrix.arch }}/woff2_decompress
+      # We need to create a folder, and then push this folder as an artifact
+      - name: Prepare artifact structure
+        run: |
+          mkdir -p artifact/darwin-${{ matrix.arch }}
+          cp tmp/build-${{ matrix.arch }}/woff2_decompress \
+            artifact/darwin-${{ matrix.arch }}/
+
+      # Upload artifacts. These artifacts will be used later, in collect-and-push action.
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: darwin-${{ matrix.arch }}
+          path: artifact/darwin-${{ matrix.arch }}
+
+  # Build woff2_decompress on Linux (amd64, arm64 and armv7) and push them as artifacts
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: check-versions
+    if: needs.check-versions.outputs.changed == 'true'
+
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+          - arch: arm64
+          - arch: armv7
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Download artifact created in check-versions
+      - name: Download woff2 sources
+        uses: actions/download-artifact@v7
+        with:
+          name: woff2-sources
+          path: tmp
+
+      # Install build tools
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+
+      # Configures brotli build with CMake
+      - name: Configures build for brotli
+        working-directory: tmp/brotli
+        run: |
+          cmake -S . -B build-${{ matrix.arch }} \
+            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+
+      # Builds brotli based on previous step
+      - name: Build brotli
+        working-directory: tmp/brotli
+        run: cmake --build build-${{ matrix.arch }}
+
+      # Configures woff2 build with CMake
+      # This configuration needs some flags: include brotli, disable shared libs
+      - name: Configures build for woff2
+        working-directory: tmp
+        run: |
+          cmake -S . -B build-${{ matrix.arch }} \
+            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
+            -DBUILD_SHARED_LIBS=FALSE \
+            -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
+            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec.a" \
+            -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc.a"
+
+      # Builds woff2 based on previous step
+      - name: Build woff2
+        working-directory: tmp
+        run: cmake --build build-${{ matrix.arch }}
+
+      # Artifacts are stored as linux-${{ matrix.arch }}/woff2_decompress
+      # We need to create a folder, and then push this folder as an artifact
+      - name: Prepare artifact structure
+        run: |
+          mkdir -p artifact/linux-${{ matrix.arch }}
+          cp tmp/build-${{ matrix.arch }}/woff2_decompress \
+            artifact/linux-${{ matrix.arch }}/
+
+      # Upload artifacts. These artifacts will be used later, in collect-and-push action.
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: artifact/linux-${{ matrix.arch }}
+
   # Gather artifacts, compare them to current version. If any change is detected, creates a new version
   # of this library.
   collect-and-push:
@@ -169,6 +338,7 @@ jobs:
     if: needs.check-versions.outputs.changed == 'true'
     needs:
       - build-windows
+      - build-darwin
 
     steps:
       - uses: actions/checkout@v6
