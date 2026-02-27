@@ -12,7 +12,7 @@ name: Build Woff2 Decompress utility
 #
 # Workflow process:
 #                       /-- [ build-windows ] --\
-#                      /---- [ build-unix ] -----\
+#                      /---- [ build-linux ] ----\
 # [ check-versions ] ------ [ build-darwin ] ------- [ collect-and-push ]
 # -> May stop workflow \--- [ build-solaris ] ---/    -> Push to deps directory
 #                       \---- [ build-bsd ] ----/
@@ -213,7 +213,9 @@ jobs:
       # Builds brotli based on previous step, and CONFIG defined in environment section
       - name: Build brotli
         working-directory: tmp/brotli
-        run: cmake --build build-${{ matrix.arch }}
+        run: |
+          cmake --build build-${{ matrix.arch }} --target brotlidec
+          cmake --build build-${{ matrix.arch }} --target brotlienc
 
       # Configures woff2 build with CMake, with osx_arch defined by above matrix
       # This configuration needs some flags: include brotli, disable shared libs
@@ -295,7 +297,9 @@ jobs:
       # Builds brotli based on previous step
       - name: Build brotli
         working-directory: tmp/brotli
-        run: cmake --build build-${{ matrix.arch }}
+        run: |
+          cmake --build build-${{ matrix.arch }} --target brotlidec
+          cmake --build build-${{ matrix.arch }} --target brotlienc
 
       # Configures woff2 build with CMake
       # This configuration needs some flags: include brotli, disable shared libs
