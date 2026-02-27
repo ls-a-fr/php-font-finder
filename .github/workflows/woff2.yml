@@ -224,8 +224,7 @@ jobs:
       - name: Build brotli
         working-directory: tmp/brotli
         run: |
-          cmake --build build-${{ matrix.arch }} --target brotlidec
-          cmake --build build-${{ matrix.arch }} --target brotlienc
+          cmake --build build-${{ matrix.arch }}
 
       # Configures woff2 build with CMake, with osx_arch defined by above matrix
       # This configuration needs some flags: include brotli, disable shared libs
