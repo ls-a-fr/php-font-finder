@@ -270,7 +270,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - arch: amd64
+          # - arch: amd64
           - arch: arm64
           - arch: armv7
 
