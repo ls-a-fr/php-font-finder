@@ -534,6 +534,7 @@ jobs:
           arch: ${{ matrix.bsd_arch }}
           usesh: true
           run: |
+
             set -e
 
             # Install required packages
@@ -553,7 +554,9 @@ jobs:
             cd brotli
             cmake -S . -B build-${{ matrix.arch }} \
               -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+            
             cmake --build build-${{ matrix.arch }}
+
             cd ..
 
             # Configures woff2 build with CMake
@@ -568,6 +571,9 @@ jobs:
             cmake --build build-${{ matrix.arch }}
 
             # Prepare artifact structure
+            find . -maxdepth 3 -name woff2_decompress
+
+            exit 1
             mkdir -p artifact/solaris-${{ matrix.arch }}
             cp build-${{ matrix.arch }}/woff2_decompress artifact/solaris-${{ matrix.arch }}/
 
@@ -597,6 +603,8 @@ jobs:
       - name: Download artifacts in deps folder
         uses: actions/download-artifact@v7
         with:
+          # Include all artifacts with a pattern: woff2 and brotli sources are uploaded as
+          # an artifact, and you do not want to push this code in deps folder
           pattern: |
             windows-*
             linux-*
