@@ -594,6 +594,7 @@ jobs:
             linux-*
             darwin-*
             bsd-*
+            solaris-*
             VERSION
           path: deps
           merge-multiple: true
