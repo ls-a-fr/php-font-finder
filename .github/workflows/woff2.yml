@@ -587,6 +587,7 @@ jobs:
       - build-darwin
       - build-linux
       - build-bsd
+      - build-solaris
 
     steps:
       - uses: actions/checkout@v6
