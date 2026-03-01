@@ -642,14 +642,39 @@ jobs:
       - uses: actions/checkout@v6
 
       # Artifacts are stored in "deps" folder
-      - name: Download artifacts in deps folder
+      # We need several artifact download steps, one for each build. Multiple patterns does not
+      # seem to be allowed. Be careful, woff2 and brotli sources are uploaded as an artifact, 
+      # and you do not want to push this code in deps folder
+      - name: Download Linux artifacts in deps folder
         uses: actions/download-artifact@v7
         with:
-          # Include all artifacts with a pattern: woff2 and brotli sources are uploaded as
-          # an artifact, and you do not want to push this code in deps folder
-          pattern: windows-*,linux-*,darwin-*,bsd-*,solaris-*,VERSION
+          pattern: linux-*
           path: deps
-          merge-multiple: true
+      - name: Download Windows artifacts in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          pattern: windows-*
+          path: deps
+      - name: Download Darwin artifacts in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          pattern: darwin-*
+          path: deps
+      - name: Download BSD artifacts in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          pattern: bsd-*
+          path: deps
+      - name: Download Solaris artifacts in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          pattern: solaris-*
+          path: deps
+      - name: Download VERSION artifact in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          name: VERSION
+          path: deps
 
       - name: Bump version in composer.json
         id: bump_version
