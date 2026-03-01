@@ -398,6 +398,110 @@ jobs:
           name: linux-${{ matrix.arch }}
           path: artifact/linux-${{ matrix.arch }}
 
+  # Build woff2_decompress on BSD (amd64 and arm64) and push them as artifacts
+  build-bsd:
+    runs-on: ubuntu-latest
+    needs: check-versions
+    if: needs.check-versions.outputs.changed == 'true'
+
+    strategy:
+      matrix:
+        include:
+          - os: freebsd
+            version: '15.0'
+            arch: amd64
+            bsd_arch: x86-64
+
+          - os: freebsd
+            version: '15.0'
+            arch: arm64
+            bsd_arch: arm64
+
+          - os: openbsd
+            version: '7.8'
+            arch: amd64
+            bsd_arch: x86-64
+
+          - os: openbsd
+            version: '7.8'
+            arch: arm64
+            bsd_arch: arm64
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Download artifact created in prepare-sources
+      - name: Download woff2 sources
+        uses: actions/download-artifact@v7
+        with:
+          name: woff2-sources
+          path: tmp
+
+      # Run everything inside BSD VM
+      - name: Build on ${{ matrix.os }} ${{ matrix.arch }}
+        uses: cross-platform-actions/action@v0.32.0
+        with:
+          operating_system: ${{ matrix.os }}
+          architecture: ${{ matrix.bsd_arch }}
+          version: ${{ matrix.version }}
+          shell: bash
+          run: |
+
+            set -e
+
+            # Install required packages (BSD specific)
+            if [ "${{ matrix.os }}" = "freebsd" ]; then
+              sudo pkg update
+              sudo pkg install -y cmake gmake git
+            elif [ "${{ matrix.os }}" = "openbsd" ]; then
+              sudo pkg_add cmake gmake git bash
+            fi
+
+            cd tmp
+
+            # Configures brotli build with CMake
+            cd brotli
+            cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+
+            # Builds brotli based on previous step
+            cmake --build build-${{ matrix.arch }}
+
+            cd ..
+
+            # Configures woff2 build with CMake
+            # This configuration needs some flags: include brotli, disable shared libs
+            cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER \
+              -DBUILD_SHARED_LIBS=FALSE \
+              -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec.a;brotli/build-${{ matrix.arch }}/libbrotlicommon.a" \
+              -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc.a;brotli/build-${{ matrix.arch }}/libbrotlicommon.a"
+
+            # Builds woff2 based on previous step
+            cmake --build build-${{ matrix.arch }}
+
+      # Artifacts are stored as bsd-${{ matrix.os }}-${{ matrix.arch }}/woff2_decompress
+      # We need to create a folder, and then push this folder as an artifact
+      - name: Prepare artifact structure
+        run: |
+          mkdir -p artifact/bsd-${{ matrix.os }}-${{ matrix.arch }}
+          cp tmp/build-${{ matrix.arch }}/woff2_decompress \
+            artifact/bsd-${{ matrix.os }}-${{ matrix.arch }}/
+
+      # Upload artifacts. These artifacts will be used later, in collect-and-push action.
+      - name: Upload bsd artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bsd-${{ matrix.os }}-${{ matrix.arch }}
+          path: artifact/bsd-${{ matrix.os }}-${{ matrix.arch }}
+
   # Gather artifacts, compare them to current version. If any change is detected, creates a new version
   # of this library.
   collect-and-push:
