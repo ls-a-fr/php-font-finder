@@ -92,9 +92,10 @@ jobs:
       - name: Upload VERSIONFILE artifact
         uses: actions/upload-artifact@v4
         if: steps.check.outputs.changed == 'true'
+        run: cp ${{ env.VERSIONFILE }} VERSION   # copy to root, prevent folder creation down the chain
         with:
           name: VERSION
-          path: ${{ env.VERSIONFILE }}
+          path: VERSION
       # Upload sources for all build jobs
       - name: Upload woff2 sources
         uses: actions/upload-artifact@v4
@@ -174,7 +175,7 @@ jobs:
             artifact/windows-${{ matrix.arch }}/
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
-      - name: Upload exe artifact
+      - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.arch }}
@@ -255,7 +256,7 @@ jobs:
             artifact/darwin-${{ matrix.arch }}/
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
-      - name: Upload binary artifact
+      - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
           name: darwin-${{ matrix.arch }}
@@ -392,7 +393,7 @@ jobs:
             artifact/linux-${{ matrix.arch }}/
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
-      - name: Upload binary artifact
+      - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
@@ -496,7 +497,7 @@ jobs:
             artifact/bsd-${{ matrix.os }}-${{ matrix.arch }}/
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
-      - name: Upload bsd artifact
+      - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
           name: bsd-${{ matrix.os }}-${{ matrix.arch }}
@@ -571,11 +572,13 @@ jobs:
             cmake --build build-${{ matrix.arch }}
 
             # Prepare artifact structure
+            # Folder needs to be located at GITHUB_WORKSPACE root, as Copyback only takes elements in
+            # workspace root
             mkdir -p $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}
             cp build-${{ matrix.arch }}/woff2_decompress $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}/
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
-      - name: Upload exe artifact
+      - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
           name: solaris-${{ matrix.arch }}
