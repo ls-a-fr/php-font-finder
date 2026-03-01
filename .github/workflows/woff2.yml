@@ -100,7 +100,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: steps.check.outputs.changed == 'true'
         with:
-          name: woff2-sources
+          name: _external-woff2-sources
           path: tmp
 
   # Build woff2_decompress on Windows (amd64 and i386) and push them as artifacts
@@ -131,7 +131,7 @@ jobs:
       - name: Download woff2 sources
         uses: actions/download-artifact@v7
         with:
-          name: woff2-sources
+          name: _external-woff2-sources
           path: tmp
 
       # Configures brotli build with CMake, with msvc_arch defined by above matrix
@@ -207,7 +207,7 @@ jobs:
       - name: Download woff2 sources
         uses: actions/download-artifact@v7
         with:
-          name: woff2-sources
+          name: _external-woff2-sources
           path: tmp
 
       # Configures brotli build with CMake, with osx_arch defined by above matrix
@@ -289,7 +289,7 @@ jobs:
       - name: Download woff2 sources
         uses: actions/download-artifact@v7
         with:
-          name: woff2-sources
+          name: _external-woff2-sources
           path: tmp
 
       # Install build tools
@@ -439,7 +439,7 @@ jobs:
       - name: Download woff2 sources
         uses: actions/download-artifact@v7
         with:
-          name: woff2-sources
+          name: _external-woff2-sources
           path: tmp
 
       # Run everything inside BSD VM
@@ -519,6 +519,11 @@ jobs:
       - name: Download artifacts in deps folder
         uses: actions/download-artifact@v7
         with:
+          pattern: |
+            windows-*
+            linux-*
+            darwin-*
+            bsd-*
           path: deps
           merge-multiple: true
 
