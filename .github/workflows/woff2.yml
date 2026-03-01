@@ -141,11 +141,15 @@ jobs:
           path: tmp
 
       # Configures brotli build with CMake, with msvc_arch defined by above matrix
+      # SHARED_LIBS flag prevents external link to this library, making woff2_decompress standalone
+      # MSVC_RUNTIME_LIBRARY removes any need for VC++ redistributable
       - name: Configures build for brotli
         working-directory: tmp/brotli
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
+            -DBUILD_SHARED_LIBS=FALSE \
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
       # Builds brotli based on previous step, and CONFIG defined in environment section
       - name: Build brotli
@@ -165,6 +169,7 @@ jobs:
             -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlidec.lib" \
             -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
             -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlienc.lib" \
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
       # Builds woff2 based on previous step, and CONFIG defined in environment section
       - name: Build woff2
@@ -580,7 +585,7 @@ jobs:
             # Folder needs to be located at GITHUB_WORKSPACE root, as Copyback only takes elements in
             # workspace root
             mkdir -p $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}
-            cp build-${{ matrix.arch }}/woff2_decompress $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}/woff2_decompress
+            cp build-${{ matrix.arch }}/woff2_decompress $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
       - name: Upload executable artifact
@@ -669,7 +674,9 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           pattern: solaris-*
-          path: deps
+          # Solaris has a single artefact woff2_decompress. Will check on that later, but for now,
+          # push into an hardcoded folder
+          path: deps/solaris-amd64
       - name: Download VERSION artifact in deps folder
         uses: actions/download-artifact@v7
         with:
