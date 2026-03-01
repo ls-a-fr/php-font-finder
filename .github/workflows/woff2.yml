@@ -571,7 +571,16 @@ jobs:
             cmake --build build-${{ matrix.arch }}
 
             # Prepare artifact structure
-            find . -maxdepth 3 -name woff2_decompress
+            for f in \
+                woff2_decompress \
+                */woff2_decompress \
+                */*/woff2_decompress \
+                */*/*/woff2_decompress \
+                */*/*/*/woff2_decompress \
+                */*/*/*/*/woff2_decompress
+            do
+                [ -f "$f" ] && echo "$f"
+            done
 
             exit 1
             mkdir -p artifact/solaris-${{ matrix.arch }}
