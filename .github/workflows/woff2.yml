@@ -561,9 +561,9 @@ jobs:
               -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
               -DBUILD_SHARED_LIBS=FALSE \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
-              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
+              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
               -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
-              -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a"
+              -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a"
 
             cmake --build build-${{ matrix.arch }}
 
