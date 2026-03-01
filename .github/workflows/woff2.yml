@@ -571,8 +571,8 @@ jobs:
             cmake --build build-${{ matrix.arch }}
 
             # Prepare artifact structure
-            mkdir -p artifact/solaris-${{ matrix.arch }}
-            cp build-${{ matrix.arch }}/woff2_decompress artifact/solaris-${{ matrix.arch }}/
+            mkdir -p $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}
+            cp build-${{ matrix.arch }}/woff2_decompress $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}/
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
       - name: Upload exe artifact
