@@ -537,7 +537,11 @@ jobs:
             set -e
 
             # Install required packages
-            sudo pkg install developer/gcc developer/build/gnu-make developer/versioning/git
+            sudo pkg install developer/gcc \
+              developer/gcc-14 \
+              developer/gcc/gcc-c++-14 \
+              developer/build/gnu-make \
+              developer/versioning/git
 
             cd tmp
 
