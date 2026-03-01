@@ -580,7 +580,7 @@ jobs:
             # Folder needs to be located at GITHUB_WORKSPACE root, as Copyback only takes elements in
             # workspace root
             mkdir -p $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}
-            cp build-${{ matrix.arch }}/woff2_decompress $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}/
+            cp build-${{ matrix.arch }}/woff2_decompress $GITHUB_WORKSPACE/artifact/solaris-${{ matrix.arch }}/woff2_decompress
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
       - name: Upload executable artifact
