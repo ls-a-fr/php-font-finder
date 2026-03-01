@@ -543,6 +543,10 @@ jobs:
               developer/build/gnu-make \
               developer/versioning/git
 
+            # Update PATH for cc1plus
+            export PATH=/usr/gcc/14/bin:$PATH
+            export LD_LIBRARY_PATH=/usr/gcc/14/lib:/usr/gcc/14/lib/amd64:$LD_LIBRARY_PATH
+
             cd tmp
 
             # Configures brotli build with CMake
