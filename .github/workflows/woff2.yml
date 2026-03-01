@@ -88,14 +88,19 @@ jobs:
             echo "woff2: $WOFF2_COMMIT" > "${{ env.VERSIONFILE }}"
             echo "brotli: $BROTLI_COMMIT" >> "${{ env.VERSIONFILE }}"
           fi
+
+      - name: Copy VERSIONFILE to root
+        if: steps.check.outputs.changed == 'true'
+        run: cp ${{ env.VERSIONFILE }} VERSION
+
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
       - name: Upload VERSIONFILE artifact
         uses: actions/upload-artifact@v4
         if: steps.check.outputs.changed == 'true'
-        run: cp ${{ env.VERSIONFILE }} VERSION   # copy to root, prevent folder creation down the chain
         with:
           name: VERSION
           path: VERSION
+
       # Upload sources for all build jobs
       - name: Upload woff2 sources
         uses: actions/upload-artifact@v4
