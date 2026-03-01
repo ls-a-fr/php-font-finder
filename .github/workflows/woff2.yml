@@ -78,8 +78,8 @@ jobs:
 
           # Compare
           if [ "$WOFF2_COMMIT" = "$PREV_WOFF2" ] && [ "$BROTLI_COMMIT" = "$PREV_BROTLI" ]; then
-            echo "No source changes detected. Skipping builds."
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No source changes detected. Skipping builds. EXCEPT FOR NOW"
+            echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "Sources changed. Build required."
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -149,7 +149,8 @@ jobs:
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
             -DBUILD_SHARED_LIBS=FALSE \
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
+            -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/brotli-install
 
       # Builds brotli based on previous step, and CONFIG defined in environment section
       - name: Build brotli
@@ -165,11 +166,8 @@ jobs:
             -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER \
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE \
             -DBUILD_SHARED_LIBS=FALSE \
-            -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
-            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlidec.lib" \
-            -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
-            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlienc.lib" \
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/brotli-install"
 
       # Builds woff2 based on previous step, and CONFIG defined in environment section
       - name: Build woff2
