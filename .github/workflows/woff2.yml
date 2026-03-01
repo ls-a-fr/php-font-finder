@@ -537,7 +537,7 @@ jobs:
             set -e
 
             # Install required packages
-            sudo pkgutil -y -i cmake gmake git
+            sudo pkg install developer/gcc developer/build/gnu-make developer/versioning/git
 
             cd tmp
 
