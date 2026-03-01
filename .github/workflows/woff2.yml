@@ -515,10 +515,6 @@ jobs:
             solaris_release: "11.4-gcc"
             bsd_arch: x86_64
 
-          - arch: arm64
-            solaris_release: "11.4-gcc"
-            bsd_arch: aarch64
-
     defaults:
       run:
         shell: bash
