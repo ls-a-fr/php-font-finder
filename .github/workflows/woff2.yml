@@ -589,6 +589,43 @@ jobs:
           name: solaris-${{ matrix.arch }}
           path: artifact/solaris-${{ matrix.arch }}
 
+  # test-build-windows:
+  #   runs-on: windows-latest
+  #   if: needs.check-versions.outputs.changed == 'true'
+  #   needs:
+  #     - build-windows
+
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - arch: amd64
+  #           msvc_arch: x64
+  #           devcmd_arch: x64
+
+  #         - arch: i386
+  #           msvc_arch: Win32
+  #           devcmd_arch: x86
+
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Artifacts are stored in "deps" folder
+      - name: Download artifacts in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          # Include all artifacts with a pattern: woff2 and brotli sources are uploaded as
+          # an artifact, and you do not want to push this code in deps folder
+          pattern: |
+            windows-*
+            VERSION
+          path: deps
+          merge-multiple: true
+
+
   # Gather artifacts, compare them to current version. If any change is detected, creates a new version
   # of this library.
   collect-and-push:
@@ -610,13 +647,7 @@ jobs:
         with:
           # Include all artifacts with a pattern: woff2 and brotli sources are uploaded as
           # an artifact, and you do not want to push this code in deps folder
-          pattern: |
-            windows-*
-            linux-*
-            darwin-*
-            bsd-*
-            solaris-*
-            VERSION
+          pattern: windows-*,linux-*,darwin-*,bsd-*,solaris-*,VERSION
           path: deps
           merge-multiple: true
 
