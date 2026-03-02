@@ -805,9 +805,9 @@ jobs:
             # Install required packages (BSD specific)
             if [ "${{ matrix.os }}" = "freebsd" ]; then
               pkg update -f
-              pkg install -y php82 php82-extensions composer
+              pkg install -y php82 composer
             else
-              pkg_add php php-curl php-mbstring php-openssl php-pdo php-pdo_sqlite composer 
+              pkg_add php composer 
             fi
 
             cd .ci-tests/woff2
@@ -844,7 +844,7 @@ jobs:
 
             set -e
             /opt/csw/bin/pkgutil -U
-            /opt/csw/bin/pkgutil -y -i php82 php82-common php82-curl php82-mbstring php82-openssl php82-json composer
+            /opt/csw/bin/pkgutil -y -i web/php-82 composer
             
             # Ensure PHP and Composer are in PATH
             export PATH="/opt/csw/bin:/opt/csw/sbin:$PATH"
