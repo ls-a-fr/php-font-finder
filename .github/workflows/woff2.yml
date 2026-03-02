@@ -844,8 +844,9 @@ jobs:
             php composer-setup.php --install-dir=/usr/bin --filename=composer
             rm composer-setup.php
             
-            # Add SSL support
-            echo "extension=openssl.so" | sudo tee /etc/php/8.2/conf.d/openssl.ini
+            # It would be better to include OpenSSL, but it does not seem to work
+            composer config --global disable-tls true
+            composer config --global secure-http false
 
             cd .ci-tests/woff2
             composer install --no-interaction --no-progress --prefer-dist
