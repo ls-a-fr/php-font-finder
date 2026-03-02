@@ -789,10 +789,14 @@ jobs:
               sudo pkg update -f
               sudo pkg install -y php82 php82-mbstring php82-openssl
             else
-              sudo pkg_add php 
-              sudo cp /etc/php-8.3.sample/extensions.ini /etc/php-8.3/extensions.ini
-              echo "extension=openssl"  | sudo tee -a /etc/php-8.3/extensions.ini
-              echo "extension=mbstring" | sudo tee -a /etc/php-8.3/extensions.ini
+              sudo pkg_add php-8.2
+              sudo pkg_add php-8.2-mbstring
+              sudo pkg_add php-8.2-openssl
+              sudo pkg_add php-8.2-curl
+
+              sudo cp /etc/php-8.2.sample/extensions.ini /etc/php-8.2/extensions.ini
+              echo "extension=openssl"  | sudo tee -a /etc/php-8.2/extensions.ini
+              echo "extension=mbstring" | sudo tee -a /etc/php-8.2/extensions.ini
             fi
 
             curl -sS https://getcomposer.org/installer -o composer-setup.php
