@@ -835,24 +835,41 @@ jobs:
           arch: ${{ matrix.bsd_arch }}
           usesh: true
           run: |
-
             set -e
+
             pkg refresh
             pkg install --accept web/php-82
 
-            curl -sS https://getcomposer.org/installer -o composer-setup.php
-            php composer-setup.php --install-dir=/usr/bin --filename=composer
-            rm composer-setup.php
-            
-            # It would be better to include OpenSSL, but it does not seem to work
-            composer config --global disable-tls true
-            composer config --global secure-http false
+            # Fix PHP configuration so extensions load correctly
+            sudo mkdir -p /etc/php/8.2/conf.d
 
+            # Create php.ini if missing
+            if [ ! -f /etc/php/8.2/php.ini ]; then
+              sudo cp /usr/php/8.2/php.ini-production /etc/php/8.2/php.ini
+            fi
+
+            # Ensure PHP loads extensions from the correct directory
+            sudo sed -i 's|^;*extension_dir =.*|extension_dir = "/usr/php/8.2/lib/extensions/no-debug-zts-20220829"|' /etc/php/8.2/php.ini
+            sudo sed -i 's|^;*scan_dir =.*|scan_dir = "/etc/php/8.2/conf.d"|' /etc/php/8.2/php.ini
+
+            # Enable OpenSSL extension
+            echo "extension=openssl.so" | sudo tee /etc/php/8.2/conf.d/openssl.ini
+
+            # Solaris needs this for PHP to find libssl.so.3
+            export LD_LIBRARY_PATH="/usr/lib/openssl/3:${LD_LIBRARY_PATH}"
+
+            # Install Composer
+            curl -sS https://getcomposer.org/installer -o composer-setup.php
+            /usr/php/8.2/bin/php composer-setup.php --install-dir=/usr/bin --filename=composer
+            rm composer-setup.php
+
+            # Install project dependencies
             cd .ci-tests/woff2
             composer install --no-interaction --no-progress --prefer-dist
-            
+
             cd ../..
-            php .ci-tests/woff2/run_test.php
+            /usr/php/8.2/bin/php .ci-tests/woff2/run_test.php
+
 
   # Gather artifacts, compare them to current version. If any change is detected, creates a new version
   # of this library.
