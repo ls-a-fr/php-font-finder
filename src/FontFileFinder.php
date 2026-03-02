@@ -6,7 +6,7 @@ use DirectoryIterator;
 use Lsa\Font\Finder\Platform\Bsd;
 use Lsa\Font\Finder\Platform\Darwin;
 use Lsa\Font\Finder\Platform\Solaris;
-use Lsa\Font\Finder\Platform\Unix;
+use Lsa\Font\Finder\Platform\Linux;
 use Lsa\Font\Finder\Platform\Windows;
 use RuntimeException;
 
@@ -15,12 +15,10 @@ class FontFileFinder
     private bool $autoDetect = false;
     private array $directories = [];
 
-    private function __construct()
-    {
-        
-    }
+    private function __construct() {}
 
-    public static function init() {
+    public static function init()
+    {
         return new self();
     }
 
@@ -32,19 +30,25 @@ class FontFileFinder
 
     public function addDirectory(string $directory): FontFileFinder
     {
-        if(!\file_exists($directory)) {
+        if (!\file_exists($directory)) {
             throw new RuntimeException('Directory ' . $directory . ' does not seem to exist');
         }
-        if(!\is_dir($directory)) {
+        if (!\is_dir($directory)) {
             throw new RuntimeException('Path ' . $directory . ' is not a directory');
         }
-        $this->directories = \array_unique($this->directories);
+        $this->directories = \array_unique([
+            ...$this->directories,
+            $directory
+        ]);
         return $this;
     }
 
     public function addDirectoryRecursive(string $directory): FontFileFinder
     {
-        $this->directories = \array_unique($this->doAddDirectoryRecursive($directory));
+        $this->directories = \array_unique([
+            ...$this->doAddDirectoryRecursive($directory),
+            $directory
+        ]);
         return $this;
     }
 
@@ -54,13 +58,13 @@ class FontFileFinder
         $it = new DirectoryIterator($directory);
 
         $directories = [];
-        foreach($it as $fileInfo) {
-            if($fileInfo->isDot()) {
+        foreach ($it as $fileInfo) {
+            if ($fileInfo->isDot()) {
                 continue;
             }
-            if($fileInfo->isDir()) {
+            if ($fileInfo->isDir()) {
                 $directories = array_merge(
-                    $directories, 
+                    $directories,
                     [$directory . \DIRECTORY_SEPARATOR . $fileInfo->getFilename()],
                     $this->doAddDirectoryRecursive(
                         $directory . \DIRECTORY_SEPARATOR . $fileInfo->getFilename()
@@ -74,9 +78,8 @@ class FontFileFinder
     public function get(): array
     {
         $systemFonts = ($this->autoDetect === true ? self::getSystemFonts() : []);
-        
+
         $fontFiles = [];
-        var_dump($this->directories);
         foreach ($this->directories as $directory) {
             $fontFiles = \array_merge($fontFiles, self::getFontsInDirectory($directory));
         }
@@ -90,13 +93,13 @@ class FontFileFinder
         $directories = $config['directories'] ?? [];
 
         $inst = new self();
-        if($autoDetect === true) {
+        if ($autoDetect === true) {
             $inst->addSystemFonts();
         }
-        foreach($directories as $directory) {
-            if(\is_string($directory)) {
+        foreach ($directories as $directory) {
+            if (\is_string($directory)) {
                 $inst->addDirectory($directory);
-            } else if(\is_array($directory) && $directory['recursive'] ?? false) {
+            } else if (\is_array($directory) && $directory['recursive'] ?? false) {
                 $inst->addDirectoryRecursive($directory['path']);
             } else {
                 throw new RuntimeException('Invalid directory supplied');
@@ -114,6 +117,10 @@ class FontFileFinder
                 continue;
             }
 
+            if($fileInfo->isDir()) {
+                continue;
+            }
+
             $fontFiles[] = $directory . \DIRECTORY_SEPARATOR . $fileInfo->getFilename();
         }
         return $fontFiles;
@@ -122,11 +129,11 @@ class FontFileFinder
     private static function extractFontsMetadata(array $fontFiles): array
     {
         $fonts = [];
-        foreach($fontFiles as $fontFile) {
+        foreach ($fontFiles as $fontFile) {
             $fd = new FontDecoder();
             try {
                 [$family, $weight, $italic, $bold] = $fd->extractFontMeta($fontFile);
-                if(!isset($fonts[$family])) {
+                if (!isset($fonts[$family])) {
                     $fonts[$family] = [];
                 }
                 $fonts[$family][] = new Font([
@@ -135,7 +142,7 @@ class FontFileFinder
                     'italic' => $italic,
                     'bold' => $bold
                 ]);
-            } catch(RuntimeException) {
+            } catch (RuntimeException) {
                 continue;
             }
         }
@@ -161,7 +168,7 @@ class FontFileFinder
             case 'Darwin':
                 return Darwin::getFontDirectories();
             case 'Linux':
-                return Unix::getFontDirectories();
+                return Linux::getFontDirectories();
             case 'Solaris':
                 return Solaris::getFontDirectories();
             case 'BSD':

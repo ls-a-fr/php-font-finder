@@ -13,68 +13,75 @@ class WebOpenFontFormat
         return TrueTypeFont::extractFontMeta($raw);
     }
 
-    private static function decodeWoff($raw): string
+    private static function decodeWoff(string $raw): string
     {
-        $reader = new BinaryReader($raw);
+        $r = new BinaryReader($raw);
 
-        $flavor = $reader->readUInt32();       // scaler type (TTF/OTF)
-        $length = $reader->readUInt32();       // total length
-        $numTables = $reader->readUInt16();    // number of tables
-        $reader->read(6);                       // skip searchRange, entrySelector, rangeShift
-
-        // Read table directory
-        $tables = [];
-        for ($i = 0; $i < $numTables; $i++) {
-            $tag = $reader->read(4);
-            $offset = $reader->readUInt32();
-            $compLength = $reader->readUInt32();
-            $origLength = $reader->readUInt32();
-            $reader->readUInt32(); // checksum, ignored
-
-            $tables[$tag] = [
-                'offset' => $offset,
-                'compLength' => $compLength,
-                'origLength' => $origLength,
-            ];
+        $signature = $r->read(4);
+        if ($signature !== "wOFF") {
+            throw new RuntimeException("Not a WOFF file");
         }
 
-        // Build minimal SFNT : header + table records
-        $sfnt = '';
+        $flavor        = $r->readUInt32();
+        $length        = $r->readUInt32();
+        $numTables     = $r->readUInt16();
+        $r->readUInt16(); // reserved
+        $totalSfntSize = $r->readUInt32();
+        $r->readUInt16(); // majorVersion
+        $r->readUInt16(); // minorVersion
+        $r->readUInt32(); // metaOffset
+        $r->readUInt32(); // metaLength
+        $r->readUInt32(); // metaOrigLength
+        $r->readUInt32(); // privOffset
+        $r->readUInt32(); // privLength
 
-        // SFNT header
-        $sfnt .= pack('Nnnnn', $flavor, $numTables, 0, 0, 0);
-        // searchRange, entrySelector, rangeShift = 0
+        // Table directory
+        $tables = [];
+        for ($i = 0; $i < $numTables; $i++) {
+            $tag        = $r->read(4);
+            $offset     = $r->readUInt32();
+            $compLength = $r->readUInt32();
+            $origLength = $r->readUInt32();
+            $checksum   = $r->readUInt32();
 
-        // Table records
+            $tables[] = compact('tag', 'offset', 'compLength', 'origLength', 'checksum');
+        }
+
+        // Build SFNT header
+        $searchRange   = pow(2, floor(log($numTables, 2))) * 16;
+        $entrySelector = floor(log($numTables, 2));
+        $rangeShift    = $numTables * 16 - $searchRange;
+
+        $sfnt  = pack('N', $flavor);
+        $sfnt .= pack('n', $numTables);
+        $sfnt .= pack('n', $searchRange);
+        $sfnt .= pack('n', $entrySelector);
+        $sfnt .= pack('n', $rangeShift);
+
+        // Table records + data
         $tableRecords = '';
-        $tableData = '';
-        $currentOffset = 12 + 16 * $numTables; // Data start after header + table records
+        $tableData    = '';
+        $offset       = 12 + 16 * $numTables;
 
-        foreach ($tables as $tag => $t) {
-            $offset = $t['offset'];
-            $compLength = $t['compLength'];
-            $origLength = $t['origLength'];
+        foreach ($tables as $t) {
+            $chunk = substr($raw, $t['offset'], $t['compLength']);
 
-            if ($offset + $compLength > strlen($raw)) {
-                throw new RuntimeException("Table $tag exceeds WOFF data length");
-            }
-
-            $chunk = substr($raw, $offset, $compLength);
-            if ($compLength !== $origLength) {
+            if ($t['compLength'] !== $t['origLength']) {
                 $chunk = gzuncompress($chunk);
-                if ($chunk === false || strlen($chunk) !== $origLength) {
-                    throw new RuntimeException("Failed to decompress table $tag");
-                }
             }
 
-            $checksum = 0;
-            $tableRecords .= pack('a4NNN', $tag, $checksum, $currentOffset, $origLength);
+            $pad = (4 - ($t['origLength'] % 4)) % 4;
 
-            // padding 4 bytes
-            $pad = (4 - (strlen($chunk) % 4)) % 4;
+            $tableRecords .= pack(
+                'a4NNN',
+                $t['tag'],
+                $t['checksum'],
+                $offset,
+                $t['origLength']
+            );
+
             $tableData .= $chunk . str_repeat("\0", $pad);
-
-            $currentOffset += strlen($chunk) + $pad;
+            $offset += $t['origLength'] + $pad;
         }
 
         return $sfnt . $tableRecords . $tableData;

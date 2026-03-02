@@ -5,7 +5,8 @@ namespace Lsa\Font\Finder\Platform;
 use Lsa\Font\Finder\Contracts\FontPlatform;
 use Symfony\Component\Process\Process;
 
-class Windows implements FontPlatform {
+class Windows implements FontPlatform
+{
     public static function getFontDirectories(): array
     {
         $windirs = self::getWinDirectories();
@@ -22,6 +23,17 @@ class Windows implements FontPlatform {
         return $directories;
     }
 
+    public static function getSystemInformation(): SystemInformation
+    {
+        $arch = strtolower(php_uname('m'));
+
+        if (str_contains($arch, 'amd64')) {
+            return new SystemInformation('windows', null, 'amd64');
+        }
+
+        return new SystemInformation('windows', null, 'i386');
+    }
+
     private static function getWinDirectories(): array
     {
         if (\str_starts_with(PHP_OS, "Windows 9")) {
@@ -29,7 +41,7 @@ class Windows implements FontPlatform {
         } else {
             $process = new Process(['cmd.exe', '/c', 'echo', '%windir%']);
         }
-        
+
         $process->run();
 
         if ($process->isSuccessful() === true) {

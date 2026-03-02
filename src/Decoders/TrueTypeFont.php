@@ -3,13 +3,13 @@
 namespace Lsa\Font\Finder\Decoders;
 
 use Lsa\Font\Finder\BinaryReader;
+use RuntimeException;
 
 class TrueTypeFont
 {
     public static function extractFontMeta(string $raw): array
     {
         $reader = new BinaryReader($raw);
-        
         $reader->read(4); // scaler type
         $numTables = $reader->readUInt16();
         $reader->read(6); // searchRange etc.
@@ -17,12 +17,16 @@ class TrueTypeFont
         $tables = [];
 
         for ($i = 0; $i < $numTables; $i++) {
-            $tag = $reader->read(4);
-            $reader->readUInt32(); // checksum
-            $offset = $reader->readUInt32();
-            $length = $reader->readUInt32();
+            try {
+                $tag = $reader->read(4);
+                $reader->readUInt32(); // checksum
+                $offset = $reader->readUInt32();
+                $length = $reader->readUInt32();
 
-            $tables[$tag] = [$offset, $length];
+                $tables[$tag] = [$offset, $length];
+            } catch(RuntimeException $e) {
+                continue;
+            }
         }
 
         $family = 'Unknown';

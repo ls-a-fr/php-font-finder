@@ -2,7 +2,9 @@
 
 namespace Lsa\Font\Finder\Decoders;
 
-use Lsa\Font\Finder\BinaryReader;
+use Exception;
+use Lsa\Font\Finder\Platform\SystemInformation;
+use Lsa\Font\Finder\Platform\Windows;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
@@ -10,54 +12,55 @@ class WebOpenFontFormat2
 {
     public static function extractFontMeta(string $raw): array
     {
-        $raw = self::decodeWoff2($raw);
+        $raw = self::windowsDecodeWoff2($raw);
         return TrueTypeFont::extractFontMeta($raw);
-    }
-
-    private static function decodeWoff2(string $raw) : string
-    {
-        switch (PHP_OS_FAMILY) {
-            case 'Windows':
-                return self::windowsDecodeWoff2($raw);
-            case 'Darwin':
-            case 'Linux':
-            case 'Solaris':
-            case 'BSD':
-                return self::unixDecodeWoff2($raw);
-            default:
-                return [];
-        }
     }
 
     private static function windowsDecodeWoff2(string $raw): string
     {
-        $tempFile = tempnam(sys_get_temp_dir(), 'font-finder') . '.woff2';
+        $tempFile = tempnam(sys_get_temp_dir(), 'lff');
         \file_put_contents($tempFile, $raw);
 
         $process = new Process([
-            'cmd.exe', 
+            'cmd.exe',
             '/c',
-            self::getBuildFolder() . \DIRECTORY_SEPARATOR . 'woff2_decompress.exe',
+            self::getWoff2Executable(),
             $tempFile
         ]);
         
         $process->run();
 
-        if ($process->isSuccessful() === true) {
-            return $tempFile . '.ttf';
+        if ($process->isSuccessful() !== true) {
+            throw new RuntimeException('Could not execute woff2_decompress');
         }
+
+        $ttfFile = $tempFile . '.ttf';
+        if(\str_contains($tempFile, '.')) {
+            $ttfFileParts = explode('.', $tempFile);
+            \array_pop($ttfFileParts);
+            $ttfFileParts[] = 'ttf';
+            $ttfFile = implode('.', $ttfFileParts);
+        }
+
+        if(!\file_exists($ttfFile)) {
+            throw new RuntimeException('Could not generate (or find) ttf file');
+        }
+        return \file_get_contents($ttfFile);
     }
 
-    private static function getBuildFolder() : string
+    private static function getWoff2Executable() : string
     {
+        $sysInfo = Windows::getSystemInformation();
         $path = realpath(implode(\DIRECTORY_SEPARATOR, [
             __DIR__,
             '..',
             '..',
-            'build'
+            'deps',
+            $sysInfo->getValue(SystemInformation::FORMAT_DEPS),
+            'woff2_decompress.exe'
         ]));
         if($path === false) {
-            throw new RuntimeException('Build folder could not be found, check your install');
+            throw new RuntimeException('Util woff2_decompress.exe could not be found, check your install');
         }
         return $path;
     }

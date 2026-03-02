@@ -140,17 +140,18 @@ jobs:
           name: _external-woff2-sources
           path: tmp
 
-      # Configures brotli build with CMake, with msvc_arch defined by above matrix
-      # SHARED_LIBS flag prevents external link to this library, making woff2_decompress standalone
-      # MSVC_RUNTIME_LIBRARY removes any need for VC++ redistributable
+      # As of today Brotli is not available through chocolatey, built it
+      # Options worth noting:
+      # -DBUILD_SHARED_LIBS=OFF: allows to remove brotlidec.dll down the line
+      # -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded: allows to remove MSVC dependencies
       - name: Configures build for brotli
         working-directory: tmp/brotli
         run: |
-          cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-            -DBUILD_SHARED_LIBS=FALSE \
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
-            -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/brotli-install
+          cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} `
+            -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" `
+            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} `
+            -DBUILD_SHARED_LIBS=OFF `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
       # Builds brotli based on previous step, and CONFIG defined in environment section
       - name: Build brotli
@@ -158,28 +159,52 @@ jobs:
         run: cmake --build build-${{ matrix.arch }} --config ${{ env.CONFIG }}
 
       # Configures woff2 build with CMake, with msvc_arch defined by above matrix
-      # This configuration needs some flags: include brotli, define Windows runtime
+      # Options worth noting:
+      # - DBROTLIDEC_INCLUDE_DIRS & DBROTLIENC_INCLUDE_DIRS:
+      #   - DBROTLIENC_INCLUDE_DIRS: Specifies source for Brotli .h files  (decoding)
+      #   - DBROTLIENC_INCLUDE_DIRS: Specifies source for Brotli .h files  (encoding)
+      #   - These files are part of "not using system-wide brotli linking" strategy
+      # - DBROTLIDEC_LIBRARIES & DBROTLIENC_LIBRARIES:
+      #   - DBROTLIDEC_LIBRARIES: Specifies compiled libraries for brotli (decoding)
+      #   - DBROTLIENC_LIBRARIES: Specifies compiled libraries for brotli (encoding)
+      #   - These files are necessary for woff2 to link brotli symbols, and embed them
+      #   - Note brotlicommon-static is also linked, otherwise brotlidec & brotlienc won't work
+      #   - Note that we use "-static" suffixes, because we want to fully embed brotli and
+      #     not depend on it
+      #   - If your build says:
+      #     -- Could NOT find BrotliDec (missing: BROTLIDEC_LIBRARIES) (found version "")
+      #     It is usually caused by these directives
+      # - DBUILD_SHARED_LIBS: Prevents errors in library linking
       - name: Configures build for woff2
         working-directory: tmp
+        shell: powershell
         run: |
-          cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER \
-            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE \
-            -DBUILD_SHARED_LIBS=FALSE \
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
-            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/brotli-install"
+          cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} `
+            -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" `
+            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} `
+            -DBUILD_SHARED_LIBS=OFF `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE `
+            -DCMAKE_PREFIX_PATH="brotli" `
+            -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" `
+            -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" `
+            -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlidec-static.lib;brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlicommon-static.lib" `
+            -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlienc-static.lib;brotli/build-${{ matrix.arch }}/${{ env.CONFIG }}/brotlicommon-static.lib"
 
       # Builds woff2 based on previous step, and CONFIG defined in environment section
       - name: Build woff2
         working-directory: tmp
+        shell: powershell
+        # Prevents warning?
         run: cmake --build build-${{ matrix.arch }} --config ${{ env.CONFIG }}
 
       # Artifacts are stored as windows-${{ matrix.arch }}/woff2_decompress.exe
       # We need to create a folder, and then push this folder as an artifact
       - name: Prepare artifact structure
+        shell: powershell
         run: |
           mkdir -p artifact/windows-${{ matrix.arch }}
-          cp tmp/build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe \
+          cp tmp/build-${{ matrix.arch }}/${{ env.CONFIG }}/woff2_decompress.exe `
             artifact/windows-${{ matrix.arch }}/
 
       # Upload artifacts. These artifacts will be used later, in collect-and-push action.
@@ -224,10 +249,10 @@ jobs:
         working-directory: tmp/brotli
         run: |
           cmake -S . -B build-${{ matrix.arch }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
             -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-            -DBUILD_SHARED_LIBS=FALSE
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }}
 
       # Builds brotli based on previous step, and CONFIG defined in environment section
       - name: Build brotli
@@ -241,10 +266,10 @@ jobs:
         working-directory: tmp
         run: |
           cmake -S . -B build-${{ matrix.arch }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}"" \
             -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+            -DBUILD_SHARED_LIBS=OFF \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-            -DBUILD_SHARED_LIBS=FALSE \
             -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
             -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
             -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
@@ -326,20 +351,23 @@ jobs:
           rm -rf build-${{ matrix.arch }}
           if [ "${{ matrix.arch }}" = "armv7" ]; then
             cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
+              -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
               -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ \
-              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
+              -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
               -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
           else
             cmake -S . -B build-${{ matrix.arch }} \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
+              -DBUILD_SHARED_LIBS=OFF
           fi
 
       # Builds brotli based on previous step
@@ -356,9 +384,9 @@ jobs:
         run: |
           if [ "${{ matrix.arch }}" = "armv7" ]; then
             cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-              -DBUILD_SHARED_LIBS=FALSE \
+              -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
@@ -367,9 +395,9 @@ jobs:
               -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-              -DBUILD_SHARED_LIBS=FALSE \
+              -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
@@ -378,9 +406,9 @@ jobs:
               -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
           else
             cmake -S . -B build-${{ matrix.arch }} \
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-              -DBUILD_SHARED_LIBS=FALSE \
+              -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
@@ -476,7 +504,9 @@ jobs:
             # Configures brotli build with CMake
             cd brotli
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DBUILD_SHARED_LIBS=OFF
 
             # Builds brotli based on previous step
             cmake --build build-${{ matrix.arch }}
@@ -486,8 +516,9 @@ jobs:
             # Configures woff2 build with CMake
             # This configuration needs some flags: include brotli, disable shared libs
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=$CMAKEVER \
-              -DBUILD_SHARED_LIBS=FALSE \
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
               -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
@@ -562,7 +593,9 @@ jobs:
             # Configures brotli build with CMake
             cd brotli
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }}
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DBUILD_SHARED_LIBS=OFF
             
             cmake --build build-${{ matrix.arch }}
 
@@ -570,11 +603,12 @@ jobs:
 
             # Configures woff2 build with CMake
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM=${{ env.CMAKEVER }} \
-              -DBUILD_SHARED_LIBS=FALSE \
+              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
+              -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
+              -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
-              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
               -DBROTLIENC_INCLUDE_DIRS="brotli/c/include" \
+              -DBROTLIDEC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlidec-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a" \
               -DBROTLIENC_LIBRARIES="brotli/build-${{ matrix.arch }}/libbrotlienc-static.a;brotli/build-${{ matrix.arch }}/libbrotlicommon-static.a"
 
             cmake --build build-${{ matrix.arch }}
@@ -592,42 +626,46 @@ jobs:
           name: solaris-${{ matrix.arch }}
           path: artifact/solaris-${{ matrix.arch }}
 
-  # test-build-windows:
-  #   runs-on: windows-latest
-  #   if: needs.check-versions.outputs.changed == 'true'
-  #   needs:
-  #     - build-windows
+  test-build-windows:
+    runs-on: windows-latest
+    if: needs.check-versions.outputs.changed == 'true'
+    needs:
+      - check-versions
+      - build-windows
 
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - arch: amd64
-  #           msvc_arch: x64
-  #           devcmd_arch: x64
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            msvc_arch: x64
+            devcmd_arch: x64
 
-  #         - arch: i386
-  #           msvc_arch: Win32
-  #           devcmd_arch: x86
+          - arch: i386
+            msvc_arch: Win32
+            devcmd_arch: x86
 
-    # defaults:
-    #   run:
-    #     shell: bash
-    # steps:
-    #   # Checkouts this repository
-    #   - uses: actions/checkout@v6
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
 
-    #   # Artifacts are stored in "deps" folder
-    #   - name: Download artifacts in deps folder
-    #     uses: actions/download-artifact@v7
-    #     with:
-    #       # Include all artifacts with a pattern: woff2 and brotli sources are uploaded as
-    #       # an artifact, and you do not want to push this code in deps folder
-    #       pattern: |
-    #         windows-*
-    #         VERSION
-    #       path: deps
-    #       merge-multiple: true
+      # Artifacts are stored in "deps" folder
+      - name: Download Windows artifacts in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          pattern: windows-*
+          path: deps
 
+      # Download PHP to execute test script
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Check woff2
+        run: php .ci-tests/woff2/run_test.php
 
   # Gather artifacts, compare them to current version. If any change is detected, creates a new version
   # of this library.
@@ -635,6 +673,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.check-versions.outputs.changed == 'true'
     needs:
+      - check-versions
       - build-windows
       - build-darwin
       - build-linux

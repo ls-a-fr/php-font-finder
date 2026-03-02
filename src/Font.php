@@ -10,7 +10,7 @@ class Font {
     
     public function __construct(array $fontInfo)
     {
-        $this->filename = $fontInfo['filename'];
+        $this->filename = str_replace('/', \DIRECTORY_SEPARATOR, $fontInfo['filename']);
         $this->weight = $fontInfo['weight'];
         $this->italic = $fontInfo['italic'];
         $this->bold = $fontInfo['bold'];

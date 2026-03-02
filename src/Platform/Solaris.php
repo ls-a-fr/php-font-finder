@@ -16,4 +16,10 @@ class Solaris implements FontPlatform {
             "/opt/sfw/lib/X11/fonts"                         // un Freeware
         ];
     }
+
+    public static function getSystemInformation(): SystemInformation
+    {
+        // php_uname('m') should detect i86pc
+        return new SystemInformation('solaris', null, 'amd64');
+    }
 }
