@@ -861,7 +861,7 @@ jobs:
             echo "extension=openssl.so" | sudo tee /etc/php/8.2/conf.d/openssl.ini
 
             # Solaris needs this for PHP to find libssl.so.3
-            export LD_LIBRARY_PATH="/usr/lib/openssl/3:${LD_LIBRARY_PATH}"
+            export LD_LIBRARY_PATH="/usr/lib/openssl/3:${LD_LIBRARY_PATH:-}"
 
             # Install Composer
             curl -sS https://getcomposer.org/installer -o composer-setup.php
