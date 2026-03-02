@@ -11,11 +11,11 @@ name: Build Woff2 Decompress utility
 # be used, using actions next to this workflow.
 #
 # Workflow process:
-#                       /-- [ build-windows ] --\
-#                      /---- [ build-linux ] ----\
-# [ check-versions ] ------ [ build-darwin ] ------- [ collect-and-push ]
-# -> May stop workflow \--- [ build-solaris ] ---/    -> Push to deps directory
-#                       \---- [ build-bsd ] ----/
+#                       /-- [ build-windows ] -- [ test-windows ] --\
+#                      /---- [ build-linux ] ---- [ test-linux ] ----\
+# [ check-versions ] ------ [ build-darwin ] --- [ test-darwin ] ------- [ collect-and-push ]
+# -> May stop workflow \--- [ build-solaris ] -- [ test-solaris ] ---/    -> Push to deps directory
+#                       \---- [ build-bsd ] ------ [ test-bsd ] ----/
 #
 # You may reuse and modify this workflow for your projects as you see fit. If this workflow helps you,
 # consider staring this project, it helps us moving forward!
@@ -668,6 +668,193 @@ jobs:
       - name: Check woff2
         run: php .ci-tests/woff2/run_test.php
 
+  test-build-darwin:
+    runs-on: macos-latest
+    if: needs.check-versions.outputs.changed == 'true'
+    needs:
+      - check-versions
+      - build-darwin
+
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            osx_arch: x86_64
+
+          - arch: arm64
+            osx_arch: arm64
+
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Artifacts are stored in "deps" folder
+      - name: Download macOS artifacts in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          pattern: darwin-*
+          path: deps
+
+      # Download PHP to execute test script
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install Composer dependencies for woff2
+        working-directory: .ci-tests/woff2
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Check woff2
+        run: php .ci-tests/woff2/run_test.php
+
+  test-build-linux:
+    runs-on: ubuntu-latest
+    if: needs.check-versions.outputs.changed == 'true'
+    needs:
+      - check-versions
+      - build-linux
+
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+          - arch: arm64
+          - arch: armv7
+
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Artifacts are stored in "deps" folder
+      - name: Download Linux artifacts in deps folder
+        uses: actions/download-artifact@v7
+        with:
+          pattern: linux-*
+          path: deps
+
+      # Download PHP to execute test script
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install Composer dependencies for woff2
+        working-directory: .ci-tests/woff2
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Check woff2
+        run: php .ci-tests/woff2/run_test.php
+
+  test-build-bsd:
+    runs-on: ubuntu-latest
+    if: needs.check-versions.outputs.changed == 'true'
+    needs:
+      - check-versions
+      - build-bsd
+
+    strategy:
+      matrix:
+        include:
+          - os: freebsd
+            version: '15.0'
+            arch: amd64
+            bsd_arch: x86-64
+
+          - os: freebsd
+            version: '15.0'
+            arch: arm64
+            bsd_arch: arm64
+
+          - os: openbsd
+            version: '7.8'
+            arch: amd64
+            bsd_arch: x86-64
+
+          - os: openbsd
+            version: '7.8'
+            arch: arm64
+            bsd_arch: arm64
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Run everything inside BSD VM
+      - name: Build on ${{ matrix.os }} ${{ matrix.arch }}
+        uses: cross-platform-actions/action@v0.32.0
+        with:
+          operating_system: ${{ matrix.os }}
+          architecture: ${{ matrix.bsd_arch }}
+          version: ${{ matrix.version }}
+          shell: bash
+          run: |
+
+            set -e
+
+            # Install required packages (BSD specific)
+            if [ "${{ matrix.os }}" = "freebsd" ]; then
+              pkg update -f
+              pkg install -y php82 php82-extensions composer
+            else
+              pkg_add php php-curl php-mbstring php-openssl php-pdo php-pdo_sqlite composer 
+            fi
+
+            cd .ci-tests/woff2
+            composer install --no-interaction --no-progress --prefer-dist
+            cd ../..
+            php .ci-tests/woff2/run_test.php
+
+  test-build-solaris:
+    runs-on: ubuntu-latest
+    needs:
+      - check-versions
+      - build-solaris
+    if: needs.check-versions.outputs.changed == 'true'
+
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            solaris_release: "11.4-gcc"
+            bsd_arch: x86_64
+
+    steps:
+      # Check out this repository
+      - uses: actions/checkout@v6
+
+      # Run everything inside Solaris VM
+      - name: Build on Solaris ${{ matrix.arch }}
+        uses: vmactions/solaris-vm@v1
+        with:
+          release: ${{ matrix.solaris_release }}
+          arch: ${{ matrix.bsd_arch }}
+          usesh: true
+          run: |
+
+            set -e
+            /opt/csw/bin/pkgutil -U
+            /opt/csw/bin/pkgutil -y -i php82 php82-common php82-curl php82-mbstring php82-openssl php82-json composer
+            
+            # Ensure PHP and Composer are in PATH
+            export PATH="/opt/csw/bin:/opt/csw/sbin:$PATH"
+            
+            cd .ci-tests/woff2
+            composer install --no-interaction --no-progress --prefer-dist
+            
+            cd ../..
+            php .ci-tests/woff2/run_test.php
+
   # Gather artifacts, compare them to current version. If any change is detected, creates a new version
   # of this library.
   collect-and-push:
@@ -676,10 +863,10 @@ jobs:
     needs:
       - check-versions
       - test-build-windows
-      - build-darwin
-      - build-linux
-      - build-bsd
-      - build-solaris
+      - test-build-darwin
+      - test-build-linux
+      - test-build-bsd
+      - test-build-solaris
 
     steps:
       - uses: actions/checkout@v6
