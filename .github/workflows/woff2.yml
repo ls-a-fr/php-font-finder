@@ -848,9 +848,14 @@ jobs:
               sudo cp /usr/php/8.2/php.ini-production /etc/php/8.2/php.ini
             fi
 
-            # Ensure PHP loads extensions from the correct directory
-            sudo sed -i 's|^;*extension_dir =.*|extension_dir = "/usr/php/8.2/lib/extensions/no-debug-zts-20220829"|' /etc/php/8.2/php.ini
-            sudo sed -i 's|^;*scan_dir =.*|scan_dir = "/etc/php/8.2/conf.d"|' /etc/php/8.2/php.ini
+            # Solaris sed does not support -i, so we must rewrite the file manually 
+            # Fix extension_dir
+            sudo sh -c "sed 's|^;*extension_dir =.*|extension_dir = \"/usr/php/8.2/lib/extensions/no-debug-zts-20220829\"|' /etc/php/8.2/php.ini > /etc/php/8.2/php.ini.tmp"
+            sudo mv /etc/php/8.2/php.ini.tmp /etc/php/8.2/php.ini
+            
+            # Fix scan_dir
+            sudo sh -c "sed 's|^;*scan_dir =.*|scan_dir = \"/etc/php/8.2/conf.d\"|' /etc/php/8.2/php.ini > /etc/php/8.2/php.ini.tmp"
+            sudo mv /etc/php/8.2/php.ini.tmp /etc/php/8.2/php.ini 
 
             # Enable OpenSSL extension
             echo "extension=openssl.so" | sudo tee /etc/php/8.2/conf.d/openssl.ini
