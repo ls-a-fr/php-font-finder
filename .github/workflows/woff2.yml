@@ -848,7 +848,7 @@ jobs:
 
             set -e
             pkg refresh
-            pkg install -y web/php-82
+            pkg install --accept web/php-82
 
             php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
             php composer-setup.php --install-dir=/usr/local/bin --filename=composer
