@@ -149,8 +149,6 @@ jobs:
         working-directory: tmp/brotli
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} `
-            -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" `
-            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} `
             -DBUILD_SHARED_LIBS=OFF `
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
@@ -181,8 +179,6 @@ jobs:
         shell: powershell
         run: |
           cmake -S . -B build-${{ matrix.arch }} -A ${{ matrix.msvc_arch }} `
-            -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" `
-            -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} `
             -DBUILD_SHARED_LIBS=OFF `
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE `
@@ -353,21 +349,18 @@ jobs:
           if [ "${{ matrix.arch }}" = "armv7" ]; then
             cmake -S . -B build-${{ matrix.arch }} \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
               -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             cmake -S . -B build-${{ matrix.arch }} \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
               -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
           else
             cmake -S . -B build-${{ matrix.arch }} \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DBUILD_SHARED_LIBS=OFF
           fi
 
@@ -385,7 +378,6 @@ jobs:
         run: |
           if [ "${{ matrix.arch }}" = "armv7" ]; then
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
@@ -396,7 +388,6 @@ jobs:
               -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
@@ -407,7 +398,6 @@ jobs:
               -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
           else
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
@@ -505,7 +495,6 @@ jobs:
             # Configures brotli build with CMake
             cd brotli
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DBUILD_SHARED_LIBS=OFF
 
@@ -517,7 +506,6 @@ jobs:
             # Configures woff2 build with CMake
             # This configuration needs some flags: include brotli, disable shared libs
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
@@ -594,7 +582,6 @@ jobs:
             # Configures brotli build with CMake
             cd brotli
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DBUILD_SHARED_LIBS=OFF
             
@@ -604,7 +591,6 @@ jobs:
 
             # Configures woff2 build with CMake
             cmake -S . -B build-${{ matrix.arch }} \
-              -DCMAKE_POLICY_VERSION_MINIMUM="${{ env.CMAKEVER }}" \
               -DCMAKE_BUILD_TYPE=${{ env.CONFIG }} \
               -DBUILD_SHARED_LIBS=OFF \
               -DBROTLIDEC_INCLUDE_DIRS="brotli/c/include" \
@@ -801,10 +787,17 @@ jobs:
             # Install required packages (BSD specific)
             if [ "${{ matrix.os }}" = "freebsd" ]; then
               sudo pkg update -f
-              sudo pkg install -y php82 composer
+              sudo pkg install -y php82 php82-mbstring php82-openssl
             else
-              sudo pkg_add php composer 
+              sudo pkg_add php 
+              sudo cp /etc/php-8.3.sample/extensions.ini /etc/php-8.3/extensions.ini
+              echo "extension=openssl"  | sudo tee -a /etc/php-8.3/extensions.ini
+              echo "extension=mbstring" | sudo tee -a /etc/php-8.3/extensions.ini
             fi
+
+            curl -sS https://getcomposer.org/installer -o composer-setup.php
+            php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+            rm composer-setup.php
 
             cd .ci-tests/woff2
             composer install --no-interaction --no-progress --prefer-dist
