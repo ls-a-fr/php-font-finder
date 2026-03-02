@@ -629,9 +629,7 @@ jobs:
 
   test-build-windows:
     runs-on: windows-latest
-    if: needs.check-versions.outputs.changed == 'true'
     needs:
-      - check-versions
       - build-windows
 
     strategy:
@@ -674,9 +672,7 @@ jobs:
 
   test-build-darwin:
     runs-on: macos-latest
-    if: needs.check-versions.outputs.changed == 'true'
     needs:
-      - check-versions
       - build-darwin
 
     strategy:
@@ -758,9 +754,7 @@ jobs:
 
   test-build-bsd:
     runs-on: ubuntu-latest
-    if: needs.check-versions.outputs.changed == 'true'
     needs:
-      - check-versions
       - build-bsd
 
     strategy:
@@ -822,9 +816,7 @@ jobs:
   test-build-solaris:
     runs-on: ubuntu-latest
     needs:
-      - check-versions
       - build-solaris
-    if: needs.check-versions.outputs.changed == 'true'
 
     strategy:
       matrix:
@@ -851,11 +843,8 @@ jobs:
             pkg install --accept web/php-82
 
             curl -sS https://getcomposer.org/installer -o composer-setup.php
-            php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+            php composer-setup.php --install-dir=/usr/bin --filename=composer
             rm composer-setup.php
-
-            # Ensure PHP and Composer are in PATH
-            export PATH="/usr/local/bin:$PATH"
             
             cd .ci-tests/woff2
             composer install --no-interaction --no-progress --prefer-dist
@@ -867,7 +856,6 @@ jobs:
   # of this library.
   collect-and-push:
     runs-on: ubuntu-latest
-    if: needs.check-versions.outputs.changed == 'true'
     needs:
       - check-versions
       - test-build-windows
