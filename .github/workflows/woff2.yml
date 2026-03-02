@@ -849,12 +849,13 @@ jobs:
             set -e
             pkg refresh
             pkg install -y web/php-82
-            
-            /opt/csw/bin/pkgutil -U
-            /opt/csw/bin/pkgutil -y -i composer
-            
+
+            php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+            php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+            php -r "unlink('composer-setup.php');"
+
             # Ensure PHP and Composer are in PATH
-            export PATH="/opt/csw/bin:/opt/csw/sbin:$PATH"
+            export PATH="/usr/local/bin:$PATH"
             
             cd .ci-tests/woff2
             composer install --no-interaction --no-progress --prefer-dist
