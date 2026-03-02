@@ -850,9 +850,9 @@ jobs:
             pkg refresh
             pkg install --accept web/php-82
 
-            php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+            curl -sS https://getcomposer.org/installer -o composer-setup.php
             php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-            php -r "unlink('composer-setup.php');"
+            rm composer-setup.php
 
             # Ensure PHP and Composer are in PATH
             export PATH="/usr/local/bin:$PATH"
