@@ -70,7 +70,7 @@ class WebOpenFontFormat2 implements FontDecoder
             '..',
             'deps',
             $sysInfo->getValue(SystemInformation::FORMAT_DEPS),
-            'woff2_decompress.exe'
+            'woff2_decompress' . ($sysInfo->isWindows() ? '.exe' : '')
         ]);
         $realpath = \realpath($path);
         if($realpath === false) {
