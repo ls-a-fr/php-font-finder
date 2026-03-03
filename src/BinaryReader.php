@@ -38,7 +38,7 @@ class BinaryReader
 
     public function readUInt8(): int
     {
-        return unpack('n', $this->read(1))[1];
+        return ord($this->read(1));
     }
 
     public function readUInt16(): int
@@ -53,8 +53,8 @@ class BinaryReader
 
     public function readInt8(): int
     {
-        $v = unpack('n', $this->read(1))[1];
-        return $v > 0x7FFF ? $v - 0x10000 : $v;
+        $v = ord($this->read(1));
+        return $v > 0x7F ? $v - 0x100 : $v;
     }
 
     public function readInt16(): int
