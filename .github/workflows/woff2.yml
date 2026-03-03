@@ -787,7 +787,7 @@ jobs:
             # Install required packages (BSD specific)
             if [ "${{ matrix.os }}" = "freebsd" ]; then
               sudo pkg update -f
-              sudo pkg install -y php82 php82-mbstring
+              sudo pkg install -y php82 php82-mbstring php82-phar
             else
               sudo pkg_add php php-mbstring php-phar
 
