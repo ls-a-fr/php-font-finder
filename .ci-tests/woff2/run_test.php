@@ -173,6 +173,9 @@ foreach ([getExpected('woff'), getExpected('woff2')] as $i => $fontCollection) {
         usort($fonts[$i][$key], fn($a, $b) => $a->filename <=> $b->filename);
     }
 
+    //Debug BSD
+    var_dump($fontCollection, $fonts[$i]);
+
     // Testing
     assert(array_keys($fontCollection) === array_keys($fonts[$i]));
 
