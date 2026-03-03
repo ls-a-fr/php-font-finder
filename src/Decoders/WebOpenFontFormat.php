@@ -65,6 +65,26 @@ class WebOpenFontFormat implements FontDecoder
         $offset       = 12 + 16 * $numTables;
 
         foreach ($tables as $t) {
+            // Debug BSD
+            error_log(sprintf(
+                "TABLE %s: offset=%d compLength=%d origLength=%d",
+                $t['tag'],
+                $t['offset'],
+                $t['compLength'],
+                $t['origLength']
+            ));
+            if ($t['compLength'] !== $t['origLength']) {
+                $prefix = bin2hex(substr($raw, $t['offset'], 4));
+                error_log(sprintf(
+                    "COMPRESSED? %s: compLength=%d origLength=%d prefix=%s",
+                    $t['tag'],
+                    $t['compLength'],
+                    $t['origLength'],
+                    $prefix
+                ));
+            }
+            // End Debug BSD
+
             $chunk = substr($raw, $t['offset'], $t['compLength']);
 
             if ($t['compLength'] !== $t['origLength']) {
