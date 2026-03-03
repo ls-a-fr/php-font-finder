@@ -22,27 +22,14 @@ class FontDecoder
             case "OTTO": // OTF CFF
             case "true": // Apple TTF
             case "typ1": // CFF Type 1
-                return TrueTypeFont::extractFontMeta($raw);
+                return TrueTypeFont::extractFontMeta($raw, $path);
             case "wOFF":
-                return WebOpenFontFormat::extractFontMeta($raw);
+                return WebOpenFontFormat::extractFontMeta($raw, $path);
             case "wOF2":
-                return WebOpenFontFormat2::extractFontMeta($raw);
+                return WebOpenFontFormat2::extractFontMeta($raw, $path);
             default:
                 // FON, bitmap, corrupted, etc.
                 throw new RuntimeException("Unknown file format");
         }
-
-        // if ($signature === "OTTO" || $signature === "\x00\x01\x00\x00") {
-        //     // TTF/OTF
-        //     return TrueTypeFont::extractFontMeta($raw);
-        // } elseif ($signature === "wOFF") {
-        //     // WOFF
-        //     return WebOpenFontFormat::extractFontMeta($raw);
-        // } else if($signature === "wOF2") {
-        //     return WebOpenFontFormat2::extractFontMeta($raw);
-        // } else {
-        //     // FON, bitmap, corrupted, etc.
-        //     throw new RuntimeException("Unknown file format");
-        // }
     }
 }

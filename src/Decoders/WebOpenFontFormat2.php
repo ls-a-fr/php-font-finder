@@ -3,17 +3,18 @@
 namespace Lsa\Font\Finder\Decoders;
 
 use Exception;
+use Lsa\Font\Finder\Contracts\FontDecoder;
 use Lsa\Font\Finder\Platform\SystemInformation;
 use Lsa\Font\Finder\Platform\Windows;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
-class WebOpenFontFormat2
+class WebOpenFontFormat2 implements FontDecoder
 {
-    public static function extractFontMeta(string $raw): array
+    public static function extractFontMeta(string $raw, string $filename): array
     {
         $raw = self::windowsDecodeWoff2($raw);
-        return TrueTypeFont::extractFontMeta($raw);
+        return TrueTypeFont::extractFontMeta($raw, $filename);
     }
 
     private static function windowsDecodeWoff2(string $raw): string

@@ -3,11 +3,13 @@
 namespace Lsa\Font\Finder\Decoders;
 
 use Lsa\Font\Finder\BinaryReader;
+use Lsa\Font\Finder\Contracts\FontDecoder;
+use Lsa\Font\Finder\Font;
 use RuntimeException;
 
-class TrueTypeFont
+class TrueTypeFont implements FontDecoder
 {
-    public static function extractFontMeta(string $raw): array
+    public static function extractFontMeta(string $raw, string $filename): array
     {
         $reader = new BinaryReader($raw);
         $reader->read(4); // scaler type
@@ -24,7 +26,7 @@ class TrueTypeFont
                 $length = $reader->readUInt32();
 
                 $tables[$tag] = [$offset, $length];
-            } catch(RuntimeException $e) {
+            } catch (RuntimeException $e) {
                 continue;
             }
         }
@@ -98,6 +100,14 @@ class TrueTypeFont
             }
         }
 
-        return [$family, $weight, $italic, $bold];
+        return [
+            new Font([
+                'name' => $family,
+                'filename' => $filename,
+                'weight' => $weight,
+                'italic' => $italic,
+                'bold' => $bold
+            ])
+        ];
     }
 }

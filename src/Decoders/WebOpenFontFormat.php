@@ -3,14 +3,15 @@
 namespace Lsa\Font\Finder\Decoders;
 
 use Lsa\Font\Finder\BinaryReader;
+use Lsa\Font\Finder\Contracts\FontDecoder;
 use RuntimeException;
 
-class WebOpenFontFormat
+class WebOpenFontFormat implements FontDecoder
 {
-    public static function extractFontMeta(string $raw): array
+    public static function extractFontMeta(string $raw, string $filename): array
     {
         $raw = self::decodeWoff($raw);
-        return TrueTypeFont::extractFontMeta($raw);
+        return TrueTypeFont::extractFontMeta($raw, $filename);
     }
 
     private static function decodeWoff(string $raw): string

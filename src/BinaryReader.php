@@ -36,6 +36,11 @@ class BinaryReader
         return $result;
     }
 
+    public function readUInt8(): int
+    {
+        return unpack('n', $this->read(1))[1];
+    }
+
     public function readUInt16(): int
     {
         return unpack('n', $this->read(2))[1];
@@ -44,6 +49,12 @@ class BinaryReader
     public function readUInt32(): int
     {
         return unpack('N', $this->read(4))[1];
+    }
+
+    public function readInt8(): int
+    {
+        $v = unpack('n', $this->read(1))[1];
+        return $v > 0x7FFF ? $v - 0x10000 : $v;
     }
 
     public function readInt16(): int
@@ -56,6 +67,22 @@ class BinaryReader
     {
         $v = unpack('N', $this->read(4))[1];
         return $v > 0x7FFFFFFF ? $v - 0x100000000 : $v;
+    }
+
+    public function readCString(): string
+    {
+        $start = $this->pos;
+        while ($this->pos < $this->length && $this->data[$this->pos] !== "\0")
+        {
+            $this->pos++;
+        }
+        $str = substr($this->data, $start, $this->pos - $start);
+        // Skip null terminator if present
+        if ($this->pos < $this->length && $this->data[$this->pos] === "\0")
+        {
+            $this->pos++;
+        }
+        return $str;
     }
 
     public function tell(): int

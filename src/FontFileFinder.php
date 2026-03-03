@@ -132,16 +132,13 @@ class FontFileFinder
         foreach ($fontFiles as $fontFile) {
             $fd = new FontDecoder();
             try {
-                [$family, $weight, $italic, $bold] = $fd->extractFontMeta($fontFile);
-                if (!isset($fonts[$family])) {
-                    $fonts[$family] = [];
+                $foundFonts = $fd->extractFontMeta($fontFile);
+                foreach($foundFonts as $font) {
+                    if (!isset($fonts[$font->name])) {
+                        $fonts[$font->name] = [];
+                    }
+                    $fonts[$font->name][] = $font;
                 }
-                $fonts[$family][] = new Font([
-                    'filename' => $fontFile,
-                    'weight' => $weight,
-                    'italic' => $italic,
-                    'bold' => $bold
-                ]);
             } catch (RuntimeException) {
                 continue;
             }

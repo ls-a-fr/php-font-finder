@@ -40,25 +40,29 @@ function getExpected(string $format)
                 'filename' => createFullPath($format, 'Andika', 'Andika-Bold'),
                 'weight' => 700,
                 'italic' => false,
-                'bold' => true
+                'bold' => true,
+                'name' => 'Andika'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Andika', 'Andika-BoldItalic'),
                 'weight' => 700,
                 'italic' => true,
-                'bold' => true
+                'bold' => true,
+                'name' => 'Andika'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Andika', 'Andika-Italic'),
                 'weight' => 400,
                 'italic' => true,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Andika'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Andika', 'Andika-Regular'),
                 'weight' => 400,
                 'italic' => false,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Andika'
             ])
         ],
         'Andika Medium' => [
@@ -66,13 +70,15 @@ function getExpected(string $format)
                 'filename' => createFullPath($format, 'Andika', 'Andika-Medium'),
                 'weight' => 500,
                 'italic' => false,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Andika Medium'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Andika', 'Andika-MediumItalic'),
                 'weight' => 500,
                 'italic' => true,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Andika Medium'
             ]),
         ],
         'Andika SemiBold' => [
@@ -80,13 +86,15 @@ function getExpected(string $format)
                 'filename' => createFullPath($format, 'Andika', 'Andika-SemiBold'),
                 'weight' => 600,
                 'italic' => false,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Andika SemiBold'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Andika', 'Andika-SemiBoldItalic'),
                 'weight' => 600,
                 'italic' => true,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Andika SemiBold'
             ])
         ],
         'Charis' => [
@@ -94,25 +102,29 @@ function getExpected(string $format)
                 'filename' => createFullPath($format, 'Charis', 'Charis-Bold'),
                 'weight' => 700,
                 'italic' => false,
-                'bold' => true
+                'bold' => true,
+                'name' => 'Charis'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Charis', 'Charis-BoldItalic'),
                 'weight' => 700,
                 'italic' => true,
-                'bold' => true
+                'bold' => true,
+                'name' => 'Charis'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Charis', 'Charis-Italic'),
                 'weight' => 400,
                 'italic' => true,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Charis'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Charis', 'Charis-Regular'),
                 'weight' => 400,
                 'italic' => false,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Charis'
             ])
         ],
         'Charis Medium' => [
@@ -120,13 +132,15 @@ function getExpected(string $format)
                 'filename' => createFullPath($format, 'Charis', 'Charis-Medium'),
                 'weight' => 500,
                 'italic' => false,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Charis Medium'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Charis', 'Charis-MediumItalic'),
                 'weight' => 500,
                 'italic' => true,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Charis Medium'
             ]),
         ],
         'Charis SemiBold' => [
@@ -134,13 +148,15 @@ function getExpected(string $format)
                 'filename' => createFullPath($format, 'Charis', 'Charis-SemiBold'),
                 'weight' => 600,
                 'italic' => false,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Charis SemiBold'
             ]),
             new Font([
                 'filename' => createFullPath($format, 'Charis', 'Charis-SemiBoldItalic'),
                 'weight' => 600,
                 'italic' => true,
-                'bold' => false
+                'bold' => false,
+                'name' => 'Charis SemiBold'
             ])
         ],
     ];
@@ -148,9 +164,16 @@ function getExpected(string $format)
 
 // Actual check: structure,  number of elements, order, everything.
 foreach ([getExpected('woff'), getExpected('woff2')] as $i => $fontCollection) {
-    // Debug BSD
-    var_dump($fontCollection, $fonts[$i]);
-    
+    // Special BSD operation:
+    // Prevents failure in BSD filesystems: file order in not consistent with other OSes
+    foreach(array_keys($fontCollection) as $key) {
+        usort($fontCollection[$key], fn($a, $b) => $a->filename <=> $b->filename);
+    }
+    foreach(array_keys($fonts[$i]) as $key) {
+        usort($fonts[$i][$key], fn($a, $b) => $a->filename <=> $b->filename);
+    }
+
+    // Testing
     assert(array_keys($fontCollection) === array_keys($fonts[$i]));
 
     foreach ($fonts[$i] as $fontName => $fontDerivatives) {

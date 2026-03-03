@@ -11,6 +11,7 @@ class Bsd implements FontPlatform {
         $homeDir = getenv('HOME');
         return [
             $homeDir . \DIRECTORY_SEPARATOR . '.fonts',      // user
+            $homeDir . \DIRECTORY_SEPARATOR . '.local/share/fonts',
             "/usr/local/share/fonts",                        // local
             "/usr/local/lib/X11/fonts",                      // X11 local
             "/usr/share/fonts",                              // system
