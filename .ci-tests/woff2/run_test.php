@@ -148,6 +148,9 @@ function getExpected(string $format)
 
 // Actual check: structure,  number of elements, order, everything.
 foreach ([getExpected('woff'), getExpected('woff2')] as $i => $fontCollection) {
+    // Debug BSD
+    var_dump($fontCollection, $fonts[$i]);
+    
     assert(array_keys($fontCollection) === array_keys($fonts[$i]));
 
     foreach ($fonts[$i] as $fontName => $fontDerivatives) {
