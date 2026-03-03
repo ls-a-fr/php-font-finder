@@ -65,31 +65,43 @@ class WebOpenFontFormat implements FontDecoder
         $offset       = 12 + 16 * $numTables;
 
         foreach ($tables as $t) {
-            // Debug BSD
-            error_log(sprintf(
-                "TABLE %s: offset=%d compLength=%d origLength=%d",
-                $t['tag'],
-                $t['offset'],
-                $t['compLength'],
-                $t['origLength']
-            ));
-            if ($t['compLength'] !== $t['origLength']) {
-                $prefix = bin2hex(substr($raw, $t['offset'], 4));
-                error_log(sprintf(
-                    "COMPRESSED? %s: compLength=%d origLength=%d prefix=%s",
-                    $t['tag'],
-                    $t['compLength'],
-                    $t['origLength'],
-                    $prefix
-                ));
-            }
-            // End Debug BSD
-
             $chunk = substr($raw, $t['offset'], $t['compLength']);
 
             if ($t['compLength'] !== $t['origLength']) {
-                $chunk = gzinflate($chunk);
+                // Essayer ZLIB (normal pour WOFF)
+                $chunk2 = @gzuncompress($chunk);
+
+                if ($chunk2 === false) {
+                    // Essayer DEFLATE brut (rare)
+                    $chunk2 = @gzinflate($chunk);
+                }
+
+                if ($chunk2 === false) {
+                    // Debug BSD
+                    error_log(sprintf(
+                        "TABLE %s: offset=%d compLength=%d origLength=%d",
+                        $t['tag'],
+                        $t['offset'],
+                        $t['compLength'],
+                        $t['origLength']
+                    ));
+                    if ($t['compLength'] !== $t['origLength']) {
+                        $prefix = bin2hex(substr($raw, $t['offset'], 4));
+                        error_log(sprintf(
+                            "COMPRESSED? %s: compLength=%d origLength=%d prefix=%s",
+                            $t['tag'],
+                            $t['compLength'],
+                            $t['origLength'],
+                            $prefix
+                        ));
+                    }
+                    // End Debug BSD
+                    throw new RuntimeException("Unable to decompress WOFF table {$t['tag']}");
+                }
+
+                $chunk = $chunk2;
             }
+
 
             $pad = (4 - ($t['origLength'] % 4)) % 4;
 
