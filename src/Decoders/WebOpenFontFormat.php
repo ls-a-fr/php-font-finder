@@ -68,11 +68,11 @@ class WebOpenFontFormat implements FontDecoder
             $chunk = substr($raw, $t['offset'], $t['compLength']);
 
             if ($t['compLength'] !== $t['origLength']) {
-                // Essayer ZLIB (normal pour WOFF)
+                // Try zlib first
                 $chunk2 = @gzuncompress($chunk);
 
                 if ($chunk2 === false) {
-                    // Essayer DEFLATE brut (rare)
+                    // Then raw deflate
                     $chunk2 = @gzinflate($chunk);
                 }
 
