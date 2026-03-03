@@ -787,9 +787,9 @@ jobs:
             # Install required packages (BSD specific)
             if [ "${{ matrix.os }}" = "freebsd" ]; then
               sudo pkg update -f
-              sudo pkg install -y php82 php82-mbstring php82-phar php82-filter
+              sudo pkg install -y php82 php82-mbstring php82-phar php82-filter php82-zlib
             else
-              sudo pkg_add php php-mbstring
+              sudo pkg_add php php-mbstring php-zlib
 
               # Detect installed PHP version directory (php-8.x)
               PHPVER=$(ls /etc | grep '^php-[0-9]\.[0-9]$')
@@ -798,6 +798,7 @@ jobs:
               sudo cp /etc/$PHPVER.sample/extensions.ini /etc/$PHPVER/extensions.ini
               echo "extension=openssl" | sudo tee -a /etc/$PHPVER/extensions.ini
               echo "extension=mbstring" | sudo tee -a /etc/$PHPVER/extensions.ini
+              echo "extension=zlib" | sudo tee -a /etc/$PHPVER/extensions.ini
             fi
 
             curl -sS https://getcomposer.org/installer -o composer-setup.php
