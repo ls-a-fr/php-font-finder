@@ -23,13 +23,13 @@ class Darwin implements FontPlatform
         $process = new Process(['machine']);
         $process->run();
         if ($process->isSuccessful() === false) {
-            return new SystemInformation('darwin', null, 'amd64');
+            return new SystemInformation(SystemInformation::OS_DARWIN, null, 'amd64');
         }
 
         $output = $process->getOutput();
         if(\str_contains($output, 'arm64')) {
-            return new SystemInformation('darwin', null, 'arm64');
+            return new SystemInformation(SystemInformation::OS_DARWIN, null, 'arm64');
         }
-        return new SystemInformation('darwin', null, 'amd64');
+        return new SystemInformation(SystemInformation::OS_DARWIN, null, 'amd64');
     }
 }

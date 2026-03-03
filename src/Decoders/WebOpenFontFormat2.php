@@ -63,7 +63,7 @@ class WebOpenFontFormat2 implements FontDecoder
 
     private static function getWoff2Executable() : string
     {
-        $sysInfo = Windows::getSystemInformation();
+        $sysInfo = SystemInformation::getCurrent();
         $path = realpath(implode(\DIRECTORY_SEPARATOR, [
             __DIR__,
             '..',

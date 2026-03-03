@@ -23,14 +23,14 @@ class Linux implements FontPlatform {
         $output = strtolower(php_uname('m'));
 
         if(\str_contains($output, 'aarch64')) {
-            return new SystemInformation('linux', null, 'arm64');
+            return new SystemInformation(SystemInformation::OS_LINUX, null, 'arm64');
         } else if(\str_contains($output, 'x86_64')) {
-            return new SystemInformation('linux', null, 'amd64');
+            return new SystemInformation(SystemInformation::OS_LINUX, null, 'amd64');
         } else if(\str_contains($output, 'armv7')) {
-            return new SystemInformation('linux', null, 'armv7');
+            return new SystemInformation(SystemInformation::OS_LINUX, null, 'armv7');
         }
 
         \trigger_error('Could not detect architecture, fallback to amd64');
-        return new SystemInformation('linux', null, 'amd64');
+        return new SystemInformation(SystemInformation::OS_LINUX, null, 'amd64');
     }
 }

@@ -28,10 +28,10 @@ class Windows implements FontPlatform
         $arch = strtolower(php_uname('m'));
 
         if (str_contains($arch, 'amd64')) {
-            return new SystemInformation('windows', null, 'amd64');
+            return new SystemInformation(SystemInformation::OS_WINDOWS, null, 'amd64');
         }
 
-        return new SystemInformation('windows', null, 'i386');
+        return new SystemInformation(SystemInformation::OS_WINDOWS, null, 'i386');
     }
 
     private static function getWinDirectories(): array

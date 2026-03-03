@@ -22,6 +22,6 @@ class Solaris implements FontPlatform {
     public static function getSystemInformation(): SystemInformation
     {
         // php_uname('m') should detect i86pc
-        return new SystemInformation('solaris', null, 'amd64');
+        return new SystemInformation(SystemInformation::OS_SOLARIS, null, 'amd64');
     }
 }
