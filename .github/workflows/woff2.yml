@@ -787,9 +787,9 @@ jobs:
             # Install required packages (BSD specific)
             if [ "${{ matrix.os }}" = "freebsd" ]; then
               sudo pkg update -f
-              sudo pkg install -y php82 php82-mbstring php82-phar
+              sudo pkg install -y php82 php82-mbstring php82-phar php82-filter
             else
-              sudo pkg_add php php-mbstring php-phar
+              sudo pkg_add php php-mbstring
 
               # Detect installed PHP version directory (php-8.x)
               PHPVER=$(ls /etc | grep '^php-[0-9]\.[0-9]$')
