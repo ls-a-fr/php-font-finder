@@ -139,7 +139,8 @@ class FontFileFinder
                     }
                     $fonts[$font->name][] = $font;
                 }
-            } catch (RuntimeException) {
+            } catch (RuntimeException $e) {
+                \error_log('Error decoding font ' . $fontFile . ': ' . $e->getMessage());
                 continue;
             }
         }
