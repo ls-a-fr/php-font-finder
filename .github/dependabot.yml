@@ -1,6 +1,6 @@
-version: 3
+version: 2
 updates:
-  # Enable version updates for composer
+  # Enable version updates for composer xupdate
   - package-ecosystem: "composer"
     # Look for `composer.json` and `lock` files in the `root` directory
     directory: "/"
