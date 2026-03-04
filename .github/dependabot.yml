@@ -1,9 +1,9 @@
 version: 2
 updates:
-  # Enable version updates for composer xupdate
+  # Enable version updates for composer
   - package-ecosystem: "composer"
     # Look for `composer.json` and `lock` files in the `root` directory
     directory: "/"
     # Check the npm registry for updates every month
     schedule:
-      interval: "montly"
+      interval: "monthly"
