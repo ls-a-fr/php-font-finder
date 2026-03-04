@@ -27,6 +27,14 @@ on:
         required: true
         type: boolean
         default: false
+      push_when_force:
+        description: |
+          Push to a new release after rebuild force mode. 
+          You may want to re-push if nothing changed, but this is not default behavior.
+          Useful to test this workflow
+        required: true
+        type: boolean
+        default: false
 
 env:
   CMAKEVER: 3.15
@@ -48,6 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.check.outputs.changed }}
+      rebuild: ${{ steps.check.outputs.rebuild }}
       woff2_commit: ${{ steps.check.outputs.woff2_commit }}
       brotli_commit: ${{ steps.check.outputs.brotli_commit }}
     steps:
@@ -88,7 +97,10 @@ jobs:
           # Compare commit shas, or use force_mode flag
           if [ "$WOFF2_COMMIT" != "$PREV_WOFF2" ] || [ "$BROTLI_COMMIT" != "$PREV_BROTLI" ]; then
             echo "Sources changed. Build required."
+
+            # Update output
             echo "changed=true" >> $GITHUB_OUTPUT
+            echo "rebuild=true" >> $GITHUB_OUTPUT
             echo "woff2_commit=$WOFF2_COMMIT" >> $GITHUB_OUTPUT
             echo "brotli_commit=$BROTLI_COMMIT" >> $GITHUB_OUTPUT
 
@@ -97,10 +109,16 @@ jobs:
             echo "brotli: $BROTLI_COMMIT" >> "${{ env.VERSIONFILE }}"
           elif [ ${{ inputs.force_mode }} ]; then
             echo "Force mode, even if no new version is available, will rebuild anyway."
-            echo "changed=true" >> $GITHUB_OUTPUT
+
+            # Update output
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "rebuild=true" >> $GITHUB_OUTPUT
           else
             echo "No source changes detected. Skipping builds."
+
+            # Update output
             echo "changed=false" >> $GITHUB_OUTPUT
+            echo "rebuild=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Copy VERSIONFILE to root
@@ -118,7 +136,7 @@ jobs:
       # Upload sources for all build jobs
       - name: Upload woff2 sources
         uses: actions/upload-artifact@v4
-        if: steps.check.outputs.changed == 'true'
+        if: steps.check.outputs.build == 'true'
         with:
           name: _external-woff2-sources
           path: tmp
@@ -127,7 +145,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     needs: check-versions
-    if: needs.check-versions.outputs.changed == 'true'
+    if: needs.check-versions.outputs.rebuild == 'true'
 
     strategy:
       matrix:
@@ -225,7 +243,7 @@ jobs:
   build-darwin:
     runs-on: macos-latest
     needs: check-versions
-    if: needs.check-versions.outputs.changed == 'true'
+    if: needs.check-versions.outputs.rebuild == 'true'
 
     strategy:
       matrix:
@@ -309,7 +327,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     needs: check-versions
-    if: needs.check-versions.outputs.changed == 'true'
+    if: needs.check-versions.outputs.rebuild == 'true'
 
     strategy:
       matrix:
@@ -440,7 +458,7 @@ jobs:
   build-bsd:
     runs-on: ubuntu-latest
     needs: check-versions
-    if: needs.check-versions.outputs.changed == 'true'
+    if: needs.check-versions.outputs.rebuild == 'true'
 
     strategy:
       matrix:
@@ -546,7 +564,7 @@ jobs:
   build-solaris:
     runs-on: ubuntu-latest
     needs: check-versions
-    if: needs.check-versions.outputs.changed == 'true'
+    if: needs.check-versions.outputs.rebuild == 'true'
 
     strategy:
       matrix:
@@ -811,18 +829,18 @@ jobs:
             else
               sudo pkg_add php-8.2.29p2
 
+              # php complains: The allow_url_fopen setting is incorrect.
+              # - Replace allow_url_fopen if present
+              sudo sh -c "sed 's/^;*allow_url_fopen *= *.*/allow_url_fopen = On/' /etc/php-8.2.ini > /etc/php-8.2.ini.tmp"
+              sudo mv /etc/php-8.2.ini.tmp /etc/php-8.2.ini
+              # - Append only if missing, to ensure the directive exists
+              if ! grep -q '^allow_url_fopen' /etc/php-8.2.ini; then
+                echo "allow_url_fopen = On" | sudo tee -a /etc/php-8.2.ini
+              fi
+
               # Access to CLI php, as pkg_add of a specific PHP version won't create this
               # symbolic link out of the box
               sudo ln -s /usr/local/bin/php-8.2 /usr/local/bin/php
-
-              # Detect installed PHP version directory (php-8.x)
-              #PHPVER=$(ls /etc | grep '^php-[0-9]\.[0-9]$')
-              
-              # Enable extensions (is it really necessary? Makefile says it's included)
-              #sudo cp /etc/$PHPVER.sample/extensions.ini /etc/$PHPVER/extensions.ini
-              #echo "extension=openssl" | sudo tee -a /etc/$PHPVER/extensions.ini
-              #echo "extension=mbstring" | sudo tee -a /etc/$PHPVER/extensions.ini
-              #echo "extension=zlib" | sudo tee -a /etc/$PHPVER/extensions.ini
             fi
 
             curl -sS https://getcomposer.org/installer -o composer-setup.php
@@ -929,6 +947,12 @@ jobs:
   # of this library.
   collect-and-push:
     runs-on: ubuntu-latest
+    # This job should be executed only if something changed, or if push_when_force is enabled
+    # Anyway, you do not want to push something that did not pass compile to prevent duplicate
+    # releases, so ensure rebuild is also set to true
+    if: >
+      (needs.check-versions.outputs.changed == 'true' || inputs.push_when_force == 'true')
+      && needs.check-versions.outputs.rebuild == 'true'
     needs:
       - check-versions
       - test-build-windows
