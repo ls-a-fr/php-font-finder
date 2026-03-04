@@ -1,4 +1,4 @@
-version: 2
+version: 3
 updates:
   # Enable version updates for composer
   - package-ecosystem: "composer"
