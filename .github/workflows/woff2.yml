@@ -136,7 +136,7 @@ jobs:
       # Upload sources for all build jobs
       - name: Upload woff2 sources
         uses: actions/upload-artifact@v4
-        if: steps.check.outputs.build == 'true'
+        if: steps.check.outputs.rebuild == 'true'
         with:
           name: _external-woff2-sources
           path: tmp
