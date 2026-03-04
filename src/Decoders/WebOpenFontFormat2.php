@@ -39,11 +39,6 @@ class WebOpenFontFormat2 implements FontDecoder
         $process->run();
 
         if ($process->isSuccessful() !== true) {
-            // Debug BSD
-            error_log('WOFF2 exit code: ' . $process->getExitCode());
-            error_log('WOFF2 STDERR: ' . $process->getErrorOutput());
-            error_log('WOFF2 STDOUT: ' . $process->getOutput());
-            // End Debug BSD
             throw new RuntimeException('Could not execute woff2_decompress');
         }
 

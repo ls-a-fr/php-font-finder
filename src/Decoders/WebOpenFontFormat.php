@@ -99,11 +99,6 @@ class WebOpenFontFormat implements FontDecoder
             $offset += $t['origLength'] + $pad;
         }
 
-        // Debug BSD
-        $sfntFull = $sfnt . $tableRecords . $tableData;
-        error_log("SFNT builtSize=" . strlen($sfntFull) . " totalSfntSize=$totalSfntSize");
-        // End debug BSD
-
         return $sfnt . $tableRecords . $tableData;
     }
 }

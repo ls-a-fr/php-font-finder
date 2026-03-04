@@ -14,9 +14,6 @@ class TrueTypeFont implements FontDecoder
         $reader = new BinaryReader($raw);
         $reader->read(4); // scaler type
         $numTables = $reader->readUInt16();
-        // Debug BSD
-        error_log("TTF numTables=$numTables");
-        // End Debug BSD
         $reader->read(6); // searchRange etc.
 
         $tables = [];
@@ -33,9 +30,6 @@ class TrueTypeFont implements FontDecoder
                 continue;
             }
         }
-        // Debug BSD
-        error_log("TTF tables found: " . implode(',', array_keys($tables)));
-        // End Debug BSD
 
         $family = 'Unknown';
         $weight = 400;

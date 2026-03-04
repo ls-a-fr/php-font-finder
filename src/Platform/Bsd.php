@@ -34,10 +34,6 @@ class Bsd implements FontPlatform {
         }
         $arch = strtolower(php_uname('m'));
 
-        // Debug BSD
-        echo "ARCH IS: " . $arch;
-        // End Debug BSD
-
         switch($arch) {
             case 'amd64':
                 return new SystemInformation(SystemInformation::OS_BSD, $sub, 'amd64');

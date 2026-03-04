@@ -23,16 +23,35 @@ class Windows implements FontPlatform
         return $directories;
     }
 
-    public static function getSystemInformation(): SystemInformation
-    {
-        $arch = strtolower(php_uname('m'));
+public static function getSystemInformation(): SystemInformation
+{
+    $arch = strtolower(php_uname('m'));
 
-        if (str_contains($arch, 'amd64')) {
+    switch ($arch) {
+        // Windows x64
+        case 'amd64':
+        case 'x86_64':
             return new SystemInformation(SystemInformation::OS_WINDOWS, null, 'amd64');
-        }
 
-        return new SystemInformation(SystemInformation::OS_WINDOWS, null, 'i386');
+        // Windows ARM64
+        case 'arm64':
+        case 'aarch64':
+            return new SystemInformation(SystemInformation::OS_WINDOWS, null, 'arm64');
+
+        // Windows 32-bit
+        case 'i386':
+        case 'i486':
+        case 'i586':
+        case 'i686':
+        case 'x86':
+            return new SystemInformation(SystemInformation::OS_WINDOWS, null, 'i386');
+
+        default:
+            trigger_error("Unknown Windows architecture '$arch', falling back to i386");
+            return new SystemInformation(SystemInformation::OS_WINDOWS, null, 'i386');
     }
+}
+
 
     private static function getWinDirectories(): array
     {
