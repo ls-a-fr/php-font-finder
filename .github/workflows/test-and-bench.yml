@@ -1,0 +1,251 @@
+# Note: phpunit needs at least PHP 8.3
+name: Test and bench this library
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test_windows-x64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Download PHP to execute test script
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Test
+        run: composer test
+
+      - name: Bench
+        run: composer bench
+  test_windows-arm:
+    runs-on: windows-11-arm
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Download PHP to execute test script
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Test
+        run: composer test
+
+      - name: Bench
+        run: composer bench
+
+  test_linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Download PHP to execute test script
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Ensures script is writable
+        run: chmod +x deps/linux-amd64/woff2_decompress
+
+      - name: Test
+        run: composer test
+
+      - name: Bench
+        run: composer bench
+
+  test_darwin:
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkouts this repository
+      - uses: actions/checkout@v6
+
+      # Download PHP to execute test script
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Test
+        run: composer test
+
+      - name: Bench
+        run: composer bench
+
+  test_bsd:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - os: freebsd
+            version: '15.0'
+            arch: amd64
+            bsd_arch: x86-64
+
+          - os: freebsd
+            version: '15.0'
+            arch: arm64
+            bsd_arch: arm64
+
+          - os: openbsd
+            version: '7.8'
+            arch: amd64
+            bsd_arch: x86-64
+
+          - os: openbsd
+            version: '7.8'
+            arch: arm64
+            bsd_arch: arm64
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Checkout this repository
+      - uses: actions/checkout@v6
+
+      # Run everything inside BSD VM
+      - name: Test on ${{ matrix.os }} ${{ matrix.arch }}
+        uses: cross-platform-actions/action@v0.32.0
+        with:
+          operating_system: ${{ matrix.os }}
+          architecture: ${{ matrix.bsd_arch }}
+          version: ${{ matrix.version }}
+          shell: bash
+          run: |
+
+            set -e
+
+            # Install required packages (BSD specific)
+            if [ "${{ matrix.os }}" = "freebsd" ]; then
+              sudo pkg update -f
+              sudo pkg install -y php83 php83-mbstring php83-phar php83-filter php83-zlib
+            else
+              # p7zip allows to uncompress 7z and is mandatory for composer
+              # git is mandatory for composer
+              sudo pkg_add php-8.3.26p1 p7zip git
+
+              # php complains: The allow_url_fopen setting is incorrect.
+              # - Replace allow_url_fopen if present
+              sudo sh -c "sed 's/^;*allow_url_fopen *= *.*/allow_url_fopen = On/' /etc/php-8.3.ini > /etc/php-8.3.ini.tmp"
+              sudo mv /etc/php-8.3.ini.tmp /etc/php-8.3.ini
+              # - Append only if missing, to ensure the directive exists
+              if ! grep -q '^allow_url_fopen' /etc/php-8.3.ini; then
+                echo "allow_url_fopen = On" | sudo tee -a /etc/php-8.3.ini
+              fi
+
+              # Access to CLI php, as pkg_add of a specific PHP version won't create this
+              # symbolic link out of the box
+              sudo ln -s /usr/local/bin/php-8.3 /usr/local/bin/php
+
+              # 
+            fi
+
+            curl -sS https://getcomposer.org/installer -o composer-setup.php
+            sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+            rm composer-setup.php
+
+            # Ensures script is writable
+            sudo chmod +x deps/bsd-${{ matrix.os }}-${{ matrix.arch }}/woff2_decompress
+
+            # Test
+            composer install --no-interaction --no-progress --prefer-dist
+            composer test
+
+            # Bench
+            composer bench
+
+  test_solaris:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Check out this repository
+      - uses: actions/checkout@v6
+        
+      # Run everything inside Solaris VM
+      - name: Test on Solaris
+        uses: vmactions/solaris-vm@v1
+        with:
+          usesh: true
+          run: |
+            set -e
+
+            sudo pkg refresh
+            sudo pkg install --accept web/php-83
+
+            # Fix PHP configuration so extensions load correctly
+            sudo mkdir -p /etc/php/8.3/conf.d
+
+            # Create php.ini if missing
+            if [ ! -f /etc/php/8.3/php.ini ]; then
+              sudo cp /usr/php/8.3/php.ini-production /etc/php/8.3/php.ini
+            fi
+
+            # Solaris sed does not support -i, so we must rewrite the file manually 
+            # Fix extension_dir
+            sudo sh -c "sed 's|^;*extension_dir =.*|extension_dir = \"/usr/php/8.3/lib/extensions/no-debug-zts-20220829\"|' /etc/php/8.3/php.ini > /etc/php/8.3/php.ini.tmp"
+            sudo mv /etc/php/8.3/php.ini.tmp /etc/php/8.3/php.ini
+            
+            # Fix scan_dir
+            sudo sh -c "sed 's|^;*scan_dir =.*|scan_dir = \"/etc/php/8.3/conf.d\"|' /etc/php/8.3/php.ini > /etc/php/8.3/php.ini.tmp"
+            sudo mv /etc/php/8.3/php.ini.tmp /etc/php/8.3/php.ini 
+
+            # Enable OpenSSL extension
+            echo "extension=openssl.so" | sudo tee /etc/php/8.3/conf.d/openssl.ini
+            # Enable mbstring extension
+            echo "extension=mbstring.so" | sudo tee /etc/php/8.3/conf.d/mbstring.ini
+
+            # Solaris needs this for PHP to find libssl.so.3
+            export LD_LIBRARY_PATH="/usr/lib/openssl/3:${LD_LIBRARY_PATH:-}"
+
+            # Install Composer
+            curl -sS https://getcomposer.org/installer -o composer-setup.php
+            /usr/php/8.3/bin/php composer-setup.php --install-dir=/usr/bin --filename=composer
+            rm composer-setup.php
+
+            # Ensures woff2_decompress is runnable
+            sudo chmod +x deps/solaris-${{ matrix.arch }}/woff2_decompress
+
+            # Install project dependencies
+            composer install --no-interaction --no-progress --prefer-dist
+            composer test
+
+            # Bench
+            composer bench

@@ -1,0 +1,4 @@
+ttc-apple/*
+ttc-microsoft/*
+!ttc-apple/.gitkeep
+!ttc-microsoft/.gitkeep

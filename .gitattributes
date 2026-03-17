@@ -1,12 +1,15 @@
 /docs/ export-ignore
 /phpcs/ export-ignore
 /tests/ export-ignore
+/scripts/ export-ignore
+/build/ export-ignore
 /.gitignore export-ignore
 /.github export-ignore
-/.ci-tests export-ignore
 /CHANGELOG.md export-ignore
 /README.md export-ignore
 /composer.lock export-ignore
 /phpcs.xml export-ignore
 /phpstan.neon export-ignore
 /pint.json export-ignore
+/phpbench.json export-ignore
+/.env export-ignore

@@ -12,7 +12,7 @@
     "linux",
     "unix"
   ],
-  "license": "GPL-3.0-or-later",
+  "license": "MIT",
   "authors": [
     {
       "name": "ls-a",
@@ -33,13 +33,15 @@
       "@phpstan",
       "@phpcs"
     ],
-    "test": "./vendor/bin/phpunit --bootstrap tests/bootstrap.php tests --display-warnings --display-notices"
+    "test": "./vendor/bin/phpunit tests/Unit --display-warnings --display-notices",
+    "bench": "php vendor/bin/phpbench run --report=aggregate"
   },
   "require-dev": {
     "laravel/pint": "^1.22",
     "phpstan/phpstan": "^2.1",
     "phpunit/phpunit": "^12.1",
-    "squizlabs/php_codesniffer": "^4.0"
+    "squizlabs/php_codesniffer": "^4.0",
+    "phpbench/phpbench": "^1.5"
   },
   "autoload": {
     "psr-4": {

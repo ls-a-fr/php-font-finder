@@ -1,113 +1,59 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Lsa\Font\Finder\Decoders;
 
-use Lsa\Font\Finder\BinaryReader;
 use Lsa\Font\Finder\Contracts\FontDecoder;
+use Lsa\Font\Finder\Decoders\Lib\DecoderUtils;
+use Lsa\Font\Finder\Decoders\Lib\TrueTypeUtils;
 use Lsa\Font\Finder\Font;
-use RuntimeException;
 
+/**
+ * TrueTypeFont files (TTF)
+ */
 class TrueTypeFont implements FontDecoder
 {
+    public static function canExecute(string $raw): bool
+    {
+        $signature = \substr($raw, 0, 4);
+        switch ($signature) {
+            // TTF
+            case "\x00\x01\x00\x00":
+                // OTF CFF
+            case 'OTTO':
+                // Apple TTF
+            case 'true':
+                // CFF Type 1
+            case 'typ1':
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public static function extractFontMeta(string $raw, string $filename): array
     {
-        $reader = new BinaryReader($raw);
-        $reader->read(4); // scaler type
-        $numTables = $reader->readUInt16();
-        $reader->read(6); // searchRange etc.
+        // TTF layout:
+        // Offset  Size  Description
+        // 0       4     scaler type (0x00010000 or 'OTTO')
+        // 4       2     numTables
+        // 6       2     searchRange
+        // 8       2     entrySelector
+        // 10      2     rangeShift
+        // 12      ...   table records (numTables x 16 bytes)
+        //
+        // Get number of tables in file
+        $numTables = DecoderUtils::unpackInt('n', $raw, 4);
 
-        $tables = [];
-
-        for ($i = 0; $i < $numTables; $i++) {
-            try {
-                $tag = $reader->read(4);
-                $reader->readUInt32(); // checksum
-                $offset = $reader->readUInt32();
-                $length = $reader->readUInt32();
-
-                $tables[$tag] = [$offset, $length];
-            } catch (RuntimeException $e) {
-                continue;
-            }
-        }
-
-        $family = 'Unknown';
-        $weight = 400;
-        $italic = false;
-        $bold = false;
-
-        /* -------- OS/2 -------- */
-        if (isset($tables['OS/2'])) {
-            [$offset,] = $tables['OS/2'];
-            $reader->seek($offset + 4); // skip version + xAvgCharWidth
-            $weight = $reader->readUInt16();
-            $reader->seek($offset + 62);
-            $fsSelection = $reader->readUInt16();
-            $italic = ($fsSelection & 0x01) !== 0;
-            $bold   = ($fsSelection & 0x20) !== 0;
-        }
-
-        /* -------- head -------- */ else if (isset($tables['head'])) {
-            [$offset,] = $tables['head'];
-            $reader->seek($offset + 44);
-            $macStyle = $reader->readUInt16();
-            $italic = ($macStyle & 0x0002) !== 0;
-            $bold   = ($macStyle & 0x0001) !== 0;
-        }
-
-        /* -------- name -------- */
-        if (isset($tables['name'])) {
-            [$offset,] = $tables['name'];
-            $reader->seek($offset);
-
-            $reader->readUInt16(); // format
-            $count = $reader->readUInt16();
-            $stringOffset = $reader->readUInt16();
-
-            $recordsStart = $offset + 6;
-            $storageStart = $offset + $stringOffset;
-
-            for ($i = 0; $i < $count; $i++) {
-                $reader->seek($recordsStart + ($i * 12));
-
-                $platformID = $reader->readUInt16();
-                $encodingID = $reader->readUInt16();
-                $languageID = $reader->readUInt16();
-                $nameID     = $reader->readUInt16();
-                $length     = $reader->readUInt16();
-                $offsetStr  = $reader->readUInt16();
-
-                if (in_array($nameID, [1, 2, 16, 17])) {
-
-                    $reader->seek($storageStart + $offsetStr);
-                    $rawString = $reader->read($length);
-
-                    // UTF-16BE ?
-                    if ($platformID === 3) {
-                        $rawString = mb_convert_encoding($rawString, 'UTF-8', 'UTF-16BE');
-                    }
-
-                    $value = trim($rawString);
-
-                    if ($nameID === 16 && $value !== '') {
-                        $family = $value;
-                        break;
-                    } elseif ($nameID === 1 && $family === 'Unknown') {
-                        $family = $value;
-                        break;
-                    }
-                }
-            }
-        }
+        // Tables always start at offset 12
+        $tables = TrueTypeUtils::getTables($raw, $numTables, 12);
 
         return [
             new Font([
-                'name' => $family,
                 'filename' => $filename,
-                'weight' => $weight,
-                'italic' => $italic,
-                'bold' => $bold
-            ])
+                ...TrueTypeUtils::getTrueTypeInformation($tables, $raw),
+            ]),
         ];
     }
 }
