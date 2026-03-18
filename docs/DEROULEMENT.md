@@ -206,8 +206,6 @@ Si vous pensez qu'il nous manque un autre format que ceux listés ci-dessus, ou 
 
 Vous retrouverez la totalité des fichiers que nous avons intégré comme références et tests, ainsi que les sources et les personnes ou organisations que nous remercions chaleureusement ici : [README.md](../tests/samples/README.md).
 
-# Notes de bas de page
-
 [1]: https://xmlgraphics.apache.org/fop/trunk/configuration.html
 [2]: https://github.com/apache/xmlgraphics-fop/blob/89a2564fecbc1a4877d84787125becb5bbc1a90d/fop-core/src/main/java/org/apache/fop/fonts/autodetect/WindowsFontDirFinder.java
 [3]: https://en.wikipedia.org/wiki/Web_Open_Font_Format
