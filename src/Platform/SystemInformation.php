@@ -27,7 +27,7 @@ class SystemInformation
     /**
      * Operating system name
      */
-    public readonly ?string $operatingSystem;
+    public readonly string $operatingSystem;
 
     /**
      * Operating system subcategory (used for freebsd or openbsd)
@@ -37,7 +37,7 @@ class SystemInformation
     /**
      * Current architecture (amd64, arm64, etc)
      */
-    public readonly ?string $architecture;
+    public readonly string $architecture;
 
     /**
      * Creates a new SystemInformation
@@ -46,7 +46,7 @@ class SystemInformation
      * @param  ?string  $subCategory  SubCategory
      * @param  ?string  $architecture  Architecture
      */
-    public function __construct(?string $operatingSystem, ?string $subCategory, ?string $architecture)
+    public function __construct(string $operatingSystem, ?string $subCategory, string $architecture)
     {
         $this->operatingSystem = $operatingSystem;
         $this->subCategory = $subCategory;
@@ -66,7 +66,10 @@ class SystemInformation
     {
         switch ($format) {
             case self::FORMAT_DEPS:
-                return implode('-', array_filter([
+                if($this->architecture === '') {
+                    throw new ConfigurationException('Invalid architecture found');
+                }
+                $format = implode('-', array_filter([
                     $this->operatingSystem,
                     $this->subCategory,
                     $this->architecture,

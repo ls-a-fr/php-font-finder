@@ -51,7 +51,10 @@ class WebOpenFontFormat2 implements FontDecoder
         $tempFile = tempnam(sys_get_temp_dir(), 'lff');
         \file_put_contents($tempFile, $raw);
 
-        self::createTrueTypeFontFromWoff2($tempFile);
+        $process = self::runWoff2Decompress($tempFile);
+        if ($process->isSuccessful() === false) {
+            throw new RuntimeException('Could not execute woff2_decompress: ' . $process->getErrorOutput());
+        }
 
         // Rebuild output file name
         $ttfFile = $tempFile . '.ttf';
@@ -78,26 +81,6 @@ class WebOpenFontFormat2 implements FontDecoder
 
         return $ttfContents;
     }
-
-    protected static function createTrueTypeFontFromWoff2(string $tempFile): void
-    {
-        // Create shell command
-        $process = self::runWoff2Decompress($tempFile);
-
-        if ($process->isSuccessful() !== true) {
-            // Must be permissions
-            if (self::changeWoff2DecompressPermissions() === false) {
-                throw new RuntimeException('Could not execute woff2_decompress. Maybe this is permissions. Could not change them');
-            }
-            // Try again
-            $process = self::runWoff2Decompress($tempFile);
-            // It was not permissions, fail
-            if ($process->isSuccessful() === false) {
-                throw new RuntimeException('Could not execute woff2_decompress: ' . $process->getErrorOutput());
-            }
-        }
-    }
-
 
     protected static function runWoff2Decompress(string $tempFile): Process
     {
@@ -165,6 +148,11 @@ class WebOpenFontFormat2 implements FontDecoder
         $realpath = \realpath($path);
         if ($realpath === false) {
             throw new RuntimeException('Util woff2_decompress could not be found, check your install. Path: ' . $path);
+        }
+
+        // Check and maybe change permissions before storing cachedWoff2Path
+        if(self::changeWoff2DecompressPermissions() === false) {
+            throw new RuntimeException('Util woff2_decompress is not executable, check your install. Path: ' . $realpath);
         }
 
         self::$cachedWoff2Path = $realpath;
