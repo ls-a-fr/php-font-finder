@@ -216,6 +216,9 @@ jobs:
               sudo mv /usr/local/etc/php/ext-20-simplexml.ini.sample /usr/local/etc/php/ext-20-simplexml.ini
               sudo mv /usr/local/etc/php/ext-20-iconv.ini.sample /usr/local/etc/php/ext-20-iconv.ini
 
+              # FreeBSD likely does not have any font in this image. Install one:
+              # https://cgit.freebsd.org/ports/tree/x11-fonts/dejavu
+              sudo pkg install -y dejavu
             else
               # p7zip allows to uncompress 7z and is mandatory for composer
               # git is mandatory for composer
@@ -305,6 +308,10 @@ jobs:
 
             # Solaris needs this for PHP to find libssl.so.3
             export LD_LIBRARY_PATH="/usr/lib/openssl/3:${LD_LIBRARY_PATH:-}"
+
+            # Solaris VM does not seem to have any font shipped with, install one package:
+            # http://pkg.oracle.com/solaris/release/info/0/system%2Ffont%2Fdaewoo-misc%401.0.4%2C11.4-11.4.90.0.0.212.0%3A20251217T212522Z
+            sudo pkg install --accept system/font/daewoo-misc
 
             # Install Composer
             curl -sS https://getcomposer.org/installer -o composer-setup.php
