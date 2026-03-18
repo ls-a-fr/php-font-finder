@@ -70,8 +70,9 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Ensures script is writable
-        run: chmod +x deps/linux-amd64/woff2_decompress
+      # Do not ensure script is executable, let the library do it
+      # - name: Ensures script is executable
+      #   run: chmod +x deps/linux-amd64/woff2_decompress
 
       - name: Test
         run: composer test
@@ -158,7 +159,11 @@ jobs:
               sudo cp /usr/local/etc/php.ini-production /usr/local/etc/php.ini
 
               # Enable extensions
-              sudo cp /usr/local/etc/php/ext-20-*.ini.sample /usr/local/etc/php/
+              sudo mv /usr/local/etc/php/ext-20-filter.ini.sample /usr/local/etc/php/ext-20-filter.ini
+              sudo mv /usr/local/etc/php/ext-20-mbstring.ini.sample /usr/local/etc/php/ext-20-mbstring.ini
+              sudo mv /usr/local/etc/php/ext-20-phar.ini.sample /usr/local/etc/php/ext-20-phar.ini
+              sudo mv /usr/local/etc/php/ext-20-zlib.ini.sample /usr/local/etc/php/ext-20-zlib.ini
+
             else
               # p7zip allows to uncompress 7z and is mandatory for composer
               # git is mandatory for composer
@@ -176,16 +181,14 @@ jobs:
               # Access to CLI php, as pkg_add of a specific PHP version won't create this
               # symbolic link out of the box
               sudo ln -s /usr/local/bin/php-8.3 /usr/local/bin/php
-
-              # 
             fi
 
             curl -sS https://getcomposer.org/installer -o composer-setup.php
             sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
             rm composer-setup.php
 
-            # Ensures script is writable
-            sudo chmod +x deps/bsd-${{ matrix.os }}-${{ matrix.arch }}/woff2_decompress
+            # Do not ensure script is writable, let the library do it
+            # sudo chmod +x deps/bsd-${{ matrix.os }}-${{ matrix.arch }}/woff2_decompress
 
             # Test
             composer install --no-interaction --no-progress --prefer-dist
@@ -200,6 +203,13 @@ jobs:
     defaults:
       run:
         shell: bash
+
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            solaris_release: "11.4-gcc"
+            bsd_arch: x86_64
 
     steps:
       # Check out this repository
@@ -246,8 +256,8 @@ jobs:
             /usr/php/8.3/bin/php composer-setup.php --install-dir=/usr/bin --filename=composer
             rm composer-setup.php
 
-            # Ensures woff2_decompress is runnable
-            sudo chmod +x deps/solaris-${{ matrix.arch }}/woff2_decompress
+            # Do not ensure woff2_decompress is runnable, make the library do it
+            # sudo chmod +x deps/solaris-${{ matrix.arch }}/woff2_decompress
 
             # Install project dependencies
             composer install --no-interaction --no-progress --prefer-dist

@@ -66,10 +66,10 @@ class SystemInformation
     {
         switch ($format) {
             case self::FORMAT_DEPS:
-                if($this->architecture === '') {
+                if($this->operatingSystem === '' || $this->architecture === '') {
                     throw new ConfigurationException('Invalid architecture found');
                 }
-                $format = implode('-', array_filter([
+                return implode('-', array_filter([
                     $this->operatingSystem,
                     $this->subCategory,
                     $this->architecture,
