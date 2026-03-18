@@ -1,8 +1,21 @@
+# This workflow runs tests and benchmarks on this package.
+# Please find:
+# - Tests in tests/Unit folder, using PHPUnit
+# - One benchmark in tests/Performance folder, using PHPBench
+# - Another benchmark in scripts/performance-metrics.php, using raw PHP code
 # Note: phpunit needs at least PHP 8.3
 name: Test and bench
 
 on:
+  # Can start this workflow anytime manually
   workflow_dispatch:
+  # Will automatically run when pushing in the following folders
+  push:
+    paths:
+      - deps/**
+      - src/**
+      - tests/**
+      - composer.json
 
 jobs:
   test_windows-x64:

@@ -1,5 +1,8 @@
 # Font Finder
 
+[![Build Woff2 Decompress utility](https://github.com/ls-a-fr/php-font-finder/actions/workflows/woff2.yml/badge.svg)](https://github.com/ls-a-fr/php-font-finder/actions/workflows/woff2.yml)
+[![Test and bench](https://github.com/ls-a-fr/php-font-finder/actions/workflows/test-and-bench.yml/badge.svg)](https://github.com/ls-a-fr/php-font-finder/actions/workflows/test-and-bench.yml)
+
 Cette bibliothèque est un outil universel de recherche de polices : avec _presque tous_ les systèmes d'exploitation, pour _presque tous_ les formats de polices, renvoie un tableau d'informations standardisées. Elle se veut (très) rapide et récupère des informations minimales mais souvent suffisantes sur les polices.
 
 Si vous appréciez ce package et souhaitez nous soutenir, ajoutez une étoile à ce projet : cela compte beaucoup pour nous !
@@ -92,11 +95,94 @@ Au départ, nous voulions valider certaines valeurs par rapport à cette option.
 
 Au fil du temps et en fouillant dans l'histoire des polices, ce paquet est devenu au cours du développement un hommage à l'évolution des polices. Et c'est un plaisir de découvrir tant de façons d'intégrer des caractères et de la typographie.
 
-Si la curiosité vous gagne, découvrez comment nous avons procédé [ici](docs/DEROULEMENT.md).
+Si la curiosité vous gagne, découvrez comment nous avons procédé [ici](docs/DEROULEMENT.md).  
+Si vous préférez consulter les polices utilisées comme exemples dans ce package, leurs sources et nos remerciements, rendez-vous [ici](samples/README.md).
 
 ## Performance
 
-_Si vous êtes ici, c'est que vous avez descendu l'historique des commits juste pour nous voir écrire ceci, pendant que les métriques étaient compilées sur le runner GitHub. Coucou!_
+La performance est vérifiée avec les runners GitHub, dans l'[action test-and-bench](.github/workflows/test-and-bench.yml).  
+Les données affichées ci-dessous ont été extraites pendant une seule itération d'un job, avec les architectures suivantes :
+- Windows : Windows amd64
+- MacOS : MacOS amd64
+- Linux : Linux amd64
+- FreeBSD : Machine virtuelle amd64 dans un conteneur Linux
+- OpenBSD : Machine virtuelle amd64 dans un conteneur Linux
+- Solaris : Machine virtuelle amd64 dans un conteneur Linux
+
+**Note:** Logiquement, vous devriez obtenir de meilleurs résultats pour *BSD et Solaris avec une machine physique non émulée.
+
+Les durées affichées sont *par fichier*: il s'agit d'une moyenne calculée pour chacune des polices disponibles dans le dossier `samples` ainsi que celles présentes sur le système cible.
+
+| Extension   | Windows | Mac   | Linux | FreeBSD | OpenBSD | Solaris |
+| ----------- | ------- | ----- | ----- | ------- | ------- | ------- |
+| bdf         | 3ms     | 48µs  | 85µs  | 81µs    | 104µs   | 81µs    |
+| cff         | 37µs    | 17µs  | 103µs | 32µs    | 39µs    | 19µs    |
+| cff (ps)    | 2ms     | 621µs | 9ms   | 1ms     | 2ms     | 1ms     |
+| dfont       | 129µs   | 49µs  | 405µs | 114µs   | 141µs   | 91µs    |
+| eot         | 123µs   | 46µs  | 401µs | 96µs    | 118µs   | 79µs    |
+| fnt (BSD)   | 5µs     | 2µs   | 7µs   | 3µs     | 4µs     | 3µs     |
+| fon (win)   | 19µs    | 5µs   | 27µs  | 7µs     | 10µs    | 7µs     |
+| jhf         | 4µs     | 2µs   | 5µs   | 2µs     | 3µs     | 2µs     |
+| pcf         | 75µs    | 31µs  | 246µs | 57µs    | 70µs    | 50µs    |
+| pcf.gz      | 80µs    | 43µs  | 230µs | 68µs    | 80µs    | 57µs    |
+| pfa         | 60µs    | 36µs  | 41µs  | 24µs    | 75µs    | 58µs    |
+| pfb         | 122µs   | 83µs  | 96µs  | 40µs    | 88µs    | 81µs    |
+| psf         | 4µs     | 2µs   | 5µs   | 2µs     | 3µs     | 2µs     |
+| psf.gz      | 7µs     | 5µs   | 9µs   | 6µs     | 7µs     | 6µs     |
+| psfu        | 3µs     | 1µs   | 5µs   | 2µs     | 3µs     | 3µs     |
+| psfu.gz     | 9µs     | 6µs   | 11µs  | 7µs     | 8µs     | 7µs     |
+| spd         | 4µs     | 2µs   | 7µs   | 2µs     | 3µs     | 3µs     |
+| svg         | 12µs    | 11µs  | 13µs  | 8µs     | 10µs    | 9µs     |
+| svgz        | 129µs   | 132µs | 102µs | 117µs   | 121µs   | 105µs   |
+| ttc         | 372µs   | 287µs | 2ms   | 483µs   | 549µs   | 397µs   |
+| ttf         | 189µs   | 145µs | 1ms   | 272µs   | 327µs   | 214µs   |
+| woff        | 5ms     | 3ms   | 7ms   | 5ms     | 5ms     | 5ms     |
+| woff2       | 210ms   | 21ms  | 22ms  | 30ms    | 70ms    | 27ms    |
+
+Vous pouvez vérifier les métriques dans [l'exécution réalisée spécifiquement pour ces métriques](https://github.com/ls-a-fr/php-font-finder/actions/runs/23244358247/job/67568710047).  
+
+Si vous aimez PHPBench et préférez leurs métriques, parce que vous vous intéressez également à la consommation de mémoire vive, les voici :
+
+### Windows amd64
+
+| benchmark              | subject      | set | revs | its | mem_peak | mode    | rstdev |
+| ---------------------- | ------------ | --- | ---- | --- | -------- | ------- | ------ |
+| SamplesPerformanceTest | benchSamples |     | 100  | 5   | 1.946mb  | 7.184ms | ±0.61% |
+| SystemPerformanceTest  | benchSystem  |     | 100  | 5   | 1.946mb  | 5.251μs | ±3.50% |
+
+### Linux amd64
+
+| benchmark              | subject      | set | revs | its | mem_peak | mode    | rstdev |
+| ---------------------- | ------------ | --- | ---- | --- | -------- | ------- | ------ |
+| SystemPerformanceTest  | benchSystem  |     | 100  | 5   | 2.189mb  | 5.843μs | ±1.82% |
+| SamplesPerformanceTest | benchSamples |     | 100  | 5   | 2.189mb  | 1.645ms | ±0.29% |
+
+### MacOS amd64
+| benchmark              | subject      | set | revs | its | mem_peak | mode    | rstdev |
+| ---------------------- | ------------ | --- | ---- | --- | -------- | ------- | ------ |
+| SamplesPerformanceTest | benchSamples |     | 100  | 5   | 1.950mb  | 1.064ms | ±4.56% |
+| SystemPerformanceTest  | benchSystem  |     | 100  | 5   | 1.950mb  | 3.099μs | ±9.82% |
+
+### FreeBSD amd64 (VM)
+
+| benchmark              | subject      | set | revs | its | mem_peak | mode      | rstdev |
+| ---------------------- | ------------ | --- | ---- | --- | -------- | --------- | ------ |
+| SamplesPerformanceTest | benchSamples |     | 100  | 5   | 1.955mb  | 346.581μs | ±1.02% |
+| SystemPerformanceTest  | benchSystem  |     | 100  | 5   | 1.955mb  | 3.367μs   | ±9.12% |
+
+### OpenBSD amd64 (VM)
+
+| benchmark              | subject      | set | revs | its | mem_peak | mode    | rstdev |
+| ---------------------- | ------------ | --- | ---- | --- | -------- | ------- | ------ |
+| SamplesPerformanceTest | benchSamples |     | 100  | 5   | 1.943mb  | 3.870ms | ±1.69% |
+| SystemPerformanceTest  | benchSystem  |     | 100  | 5   | 1.943mb  | 4.224μs | ±6.37% |
+
+### Solaris amd64 (VM)
+
+| benchmark              | subject      | set | revs | its | mem_peak | mode    | rstdev |
+| ---------------------- | ------------ | --- | ---- | --- | -------- | ------- | ------ |
+| SamplesPerformanceTest | benchSamples |     | 100  | 5   | 1.948mb  | 1.463ms | ±1.63% |
+| SystemPerformanceTest  | benchSystem  |     | 100  | 5   | 1.948mb  | 3.821μs | ±3.65% |
 
 ## Documentation
 

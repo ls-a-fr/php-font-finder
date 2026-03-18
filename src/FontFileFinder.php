@@ -445,9 +445,6 @@ class FontFileFinder
     private static function getFontsInDirectory(string $directory): array
     {
         if(\file_exists($directory) === false || \is_dir($directory) === false) {
-            // Temporary code to check GitHub runner system directories
-            echo "Directory not found: ".$directory."\n";
-            // End temporary code
             throw new InvalidOperationException('Directory does not exist, or is not a directory: ' . $directory);
         }
         $fontFiles = [];
