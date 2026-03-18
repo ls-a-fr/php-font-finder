@@ -1,5 +1,5 @@
 # Note: phpunit needs at least PHP 8.3
-name: Test and bench this library
+name: Test and bench
 
 on:
   workflow_dispatch:
@@ -7,9 +7,21 @@ on:
 jobs:
   test_windows-x64:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            msvc_arch: x64
+            devcmd_arch: x64
+
+          - arch: i386
+            msvc_arch: Win32
+            devcmd_arch: x86
+
     defaults:
       run:
         shell: bash
+
     steps:
       # Checkouts this repository
       - uses: actions/checkout@v6
@@ -23,13 +35,24 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+        # Do not ensure script is executable, let the library do it
       - name: Test
         run: composer test
 
       - name: Bench
         run: composer bench
+
+      - name: Performance metrics
+        run: php scripts/performance-metrics.php
+
   test_windows-arm:
     runs-on: windows-11-arm
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            msvc_arch: arm64
+            devcmd_arch: arm64
     defaults:
       run:
         shell: bash
@@ -46,14 +69,24 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+        # Do not ensure script is executable, let the library do it
       - name: Test
         run: composer test
 
       - name: Bench
         run: composer bench
+
+      - name: Performance metrics
+        run: php scripts/performance-metrics.php
 
   test_linux:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+          - arch: arm64
+          - arch: armv7
     defaults:
       run:
         shell: bash
@@ -71,17 +104,25 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       # Do not ensure script is executable, let the library do it
-      # - name: Ensures script is executable
-      #   run: chmod +x deps/linux-amd64/woff2_decompress
-
       - name: Test
         run: composer test
 
       - name: Bench
         run: composer bench
 
+      - name: Performance metrics
+        run: php scripts/performance-metrics.php
+
   test_darwin:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            osx_arch: x86_64
+
+          - arch: arm64
+            osx_arch: arm64
     defaults:
       run:
         shell: bash
@@ -103,6 +144,9 @@ jobs:
 
       - name: Bench
         run: composer bench
+
+      - name: Performance metrics
+        run: php scripts/performance-metrics.php
 
   test_bsd:
     runs-on: ubuntu-latest
@@ -197,15 +241,16 @@ jobs:
             sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
             rm composer-setup.php
 
-            # Do not ensure script is writable, let the library do it
-            # sudo chmod +x deps/bsd-${{ matrix.os }}-${{ matrix.arch }}/woff2_decompress
-
+            # Do not ensure script is executable, let the library do it
             # Test
             composer install --no-interaction --no-progress --prefer-dist
             composer test
 
             # Bench
             composer bench
+
+            # Performance metrics
+            php scripts/performance-metrics.php
 
   test_solaris:
     runs-on: ubuntu-latest
@@ -266,13 +311,15 @@ jobs:
             /usr/php/8.3/bin/php composer-setup.php --install-dir=/usr/bin --filename=composer
             rm composer-setup.php
 
-            # Do not ensure woff2_decompress is runnable, make the library do it
-            # sudo chmod +x deps/solaris-${{ matrix.arch }}/woff2_decompress
-
             # Install project dependencies
             export COMPOSER_ALLOW_SUPERUSER="1"
             composer install --no-interaction --no-progress --prefer-dist
+
+            # Do not ensure script is executable, let the library do it
             composer test
 
             # Bench
             composer bench
+
+            # Performance metrics
+            php scripts/performance-metrics.php
