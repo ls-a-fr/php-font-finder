@@ -94,25 +94,6 @@ class WebOpenFontFormat2 implements FontDecoder
         return $process;
     }
 
-    protected static function changeWoff2DecompressPermissions(): bool
-    {
-        if (\is_executable(self::getWoff2Executable()) === true) {
-            return true;
-        }
-        // Check for Windows: chmod +x will likely fail, so stop here.
-        if (SystemInformation::getCurrent()->isWindows()) {
-            return true;
-        }
-        // We have nothing to lose here
-        $process = new Process([
-            "chmod",
-            "+x",
-            self::getWoff2Executable()
-        ]);
-        $process->run();
-        return $process->isSuccessful();
-    }
-
     /**
      * Utility method to build woff2_decompress executable absolute path in this library.
      * This path is cached to prevent multiple calls to `realpath` and `SystemInformation::getCurrent()`.
@@ -151,8 +132,17 @@ class WebOpenFontFormat2 implements FontDecoder
         }
 
         // Check and maybe change permissions before storing cachedWoff2Path
-        if(self::changeWoff2DecompressPermissions() === false) {
-            throw new RuntimeException('Util woff2_decompress is not executable, check your install. Path: ' . $realpath);
+        if (\is_executable($realpath) === false && SystemInformation::getCurrent()->isWindows() === false) {
+            // We have nothing to lose here
+            $process = new Process([
+                "chmod",
+                "+x",
+                $realpath
+            ]);
+            $process->run();
+            if($process->isSuccessful() === false) {
+                throw new RuntimeException('Util woff2_decompress is not executable, check your install. Path: ' . $realpath);
+            }
         }
 
         self::$cachedWoff2Path = $realpath;
